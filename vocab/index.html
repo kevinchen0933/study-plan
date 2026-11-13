@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>GRE 單字</title>
+<meta name="theme-color" content="#f2f4f8" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#11151c" media="(prefers-color-scheme: dark)">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-180.png">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="GRE 單字">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=Noto+Serif+TC:wght@700&display=swap" rel="stylesheet">
+<style>
+/* 版面想法：和讀書計畫同一本筆記本。中間一張大字卡，上面是今天的進度，底下三顆評分按鈕拇指按得到。 */
+:root{
+  --paper:#f2f4f8; --surface:#ffffff; --ink:#18202e; --muted:#5b6676; --line:#d8dde6;
+  --accent:#6a3fb5; --accent-soft:#efe9fa; --on-accent:#ffffff;
+  --bad:#bf362e; --bad-soft:#fbeceb; --mid:#8a6a08; --mid-soft:#f8f0d8; --good:#1f7a55; --good-soft:#e3f3ec;
+  --font-display:"Noto Serif TC",Georgia,"Songti TC",serif;
+  --font-body:"Noto Sans TC","PingFang TC","Microsoft JhengHei",system-ui,sans-serif;
+  --r:10px;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    color-scheme:dark;
+    --paper:#11151c; --surface:#1a2029; --ink:#e7ebf2; --muted:#98a3b3; --line:#2d3542;
+    --accent:#b99af5; --accent-soft:#2a2244; --on-accent:#140f22;
+    --bad:#ff8a7d; --bad-soft:#3a2020; --mid:#dbb245; --mid-soft:#332b14; --good:#5fc79a; --good-soft:#173328;
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --paper:#11151c; --surface:#1a2029; --ink:#e7ebf2; --muted:#98a3b3; --line:#2d3542;
+  --accent:#b99af5; --accent-soft:#2a2244; --on-accent:#140f22;
+  --bad:#ff8a7d; --bad-soft:#3a2020; --mid:#dbb245; --mid-soft:#332b14; --good:#5fc79a; --good-soft:#173328;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--paper);color:var(--ink);font-family:var(--font-body);font-size:15px;line-height:1.6;
+  font-variant-numeric:tabular-nums;-webkit-text-size-adjust:100%}
+button,input,select{font:inherit;color:inherit}
+.wrap{max-width:680px;margin:0 auto;padding:24px 16px 56px;display:flex;flex-direction:column;gap:16px}
+header.top{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:6px 16px;
+  border-bottom:2px solid var(--ink);padding-bottom:10px}
+h1{font-family:var(--font-display);font-size:26px;line-height:1.2;margin:0;letter-spacing:.03em}
+.sub{color:var(--muted);font-size:13px}
+h2{font-size:15px;font-weight:700;margin:0;letter-spacing:.05em}
+
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.stat{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:8px 10px;min-width:0}
+.stat .k{font-size:12px;color:var(--muted);display:block}
+.stat .v{font-family:var(--font-display);font-size:21px;line-height:1.3}
+.stat .v small{font-family:var(--font-body);font-size:12px;font-weight:400;color:var(--muted);margin-left:2px}
+
+.tabs{display:flex;gap:4px;background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:4px}
+.tabs button{flex:1;height:36px;border:0;border-radius:7px;background:transparent;cursor:pointer;color:var(--muted);font-weight:500}
+.tabs button[aria-selected="true"]{background:var(--accent);color:var(--on-accent)}
+
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:16px;display:flex;flex-direction:column;gap:12px;min-width:0}
+.progress{display:flex;align-items:center;gap:10px;font-size:13px;color:var(--muted)}
+.bar{flex:1;height:6px;border-radius:3px;background:var(--line);overflow:hidden}
+.bar i{display:block;height:100%;background:var(--accent);border-radius:3px}
+
+.card{border:1px solid var(--line);border-radius:var(--r);background:var(--paper);padding:28px 16px;min-height:250px;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;text-align:center}
+.word{font-family:var(--font-display);font-size:38px;line-height:1.15;overflow-wrap:anywhere}
+.pos{font-size:13px;color:var(--muted);font-style:italic}
+.zh{font-size:20px;font-weight:700}
+.en{color:var(--muted);font-size:14px}
+.tag{display:inline-block;font-size:12px;font-weight:700;border:1px solid currentColor;border-radius:4px;padding:0 6px;color:var(--accent)}
+.tag.learn{color:var(--mid)} .tag.known{color:var(--good)} .tag.new{color:var(--muted)}
+
+.btn{height:44px;padding:0 16px;border-radius:8px;border:1px solid var(--accent);background:var(--accent);color:var(--on-accent);
+  font-weight:500;cursor:pointer}
+.btn.ghost{background:transparent;color:var(--accent)}
+.btn.small{height:32px;padding:0 10px;font-size:13px}
+.rate{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.rate .btn{display:flex;flex-direction:column;align-items:center;justify-content:center;height:56px;line-height:1.2;padding:0 4px}
+.rate .btn small{font-size:11.5px;font-weight:400;opacity:.85}
+.btn.bad{background:var(--bad-soft);border-color:var(--bad);color:var(--bad)}
+.btn.mid{background:var(--mid-soft);border-color:var(--mid);color:var(--mid)}
+.btn.good{background:var(--good-soft);border-color:var(--good);color:var(--good)}
+.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.row.between{justify-content:space-between}
+.link{background:none;border:0;padding:4px 6px;color:var(--accent);cursor:pointer;border-radius:4px;font-size:13.5px}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+select,input[type=search]{height:38px;padding:0 10px;border:1px solid var(--line);border-radius:7px;background:var(--paper);min-width:0}
+input[type=search]{width:100%}
+
+.opts{display:flex;flex-direction:column;gap:8px}
+.opt{min-height:46px;height:auto;padding:8px 12px;text-align:left;border:1px solid var(--line);border-radius:8px;background:var(--paper);cursor:pointer}
+.opt[disabled]{cursor:default}
+.opt.right{border-color:var(--good);background:var(--good-soft);color:var(--good);font-weight:700}
+.opt.wrong{border-color:var(--bad);background:var(--bad-soft);color:var(--bad)}
+.verdict{font-weight:700}
+.verdict.ok{color:var(--good)} .verdict.no{color:var(--bad)}
+
+.list{display:flex;flex-direction:column}
+.item{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:2px 10px;padding:9px 0;border-top:1px solid var(--line);align-items:center}
+.item:first-child{border-top:0}
+.item .w{font-weight:700;overflow-wrap:anywhere}
+.item .w i{font-weight:400;color:var(--muted);font-size:12.5px;margin-left:6px}
+.item .m{grid-column:1;font-size:13.5px;color:var(--muted)}
+.item .t{grid-row:1/3;grid-column:2}
+.empty{color:var(--muted);text-align:center;padding:16px 0}
+.done-big{font-family:var(--font-display);font-size:24px}
+@media (max-width:420px){.stat .v{font-size:18px}.word{font-size:32px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div><h1>GRE 單字</h1><div class="sub" id="todayLine"></div></div>
+    <div class="sub" id="saveNote"></div>
+  </header>
+  <section class="stats" id="stats" aria-label="進度"></section>
+  <div class="tabs" role="tablist">
+    <button type="button" role="tab" data-view="study" aria-selected="true">複習</button>
+    <button type="button" role="tab" data-view="quiz" aria-selected="false">測驗</button>
+    <button type="button" role="tab" data-view="list" aria-selected="false">單字表</button>
+  </div>
+  <main id="main"></main>
+</div>
+<script>
+(function(){
+"use strict";
+var WORDS=[["aberrant","adj","異常的；偏離常軌的","abnormal, deviant"],["abate","v","減弱；減輕","lessen, subside"],["abstain","v","戒絕；棄權","refrain, hold back"],["abstruse","adj","深奧難懂的","obscure, hard to understand"],["acumen","n","敏銳；洞察力","shrewdness, keen insight"],["admonish","v","告誡；責備","warn, scold gently"],["adulterate","v","摻雜；使不純","contaminate, make impure"],["advocate","v","提倡；擁護","support, champion"],["aesthetic","adj","美學的；審美的","relating to beauty"],["affable","adj","和藹可親的","friendly, easygoing"],["aggrandize","v","誇大；擴大權勢","enlarge, exaggerate"],["alacrity","n","樂意；敏捷","eagerness, promptness"],["alleviate","v","緩和；減輕","ease, relieve"],["amalgamate","v","合併；混合","merge, combine"],["ambiguous","adj","模稜兩可的","unclear, open to interpretation"],["ambivalent","adj","心情矛盾的；猶豫不決的","having mixed feelings"],["ameliorate","v","改善","improve, make better"],["anachronism","n","不合時代的事物","something out of its time"],["analogous","adj","類似的","similar, comparable"],["anomaly","n","異常；反常現象","irregularity, exception"],["antagonize","v","使敵對；激怒","provoke, make hostile"],["antipathy","n","反感；厭惡","strong dislike"],["apathy","n","冷漠；無動於衷","indifference, lack of interest"],["appease","v","安撫；平息","pacify, soothe"],["arbitrary","adj","任意的；武斷的","random, without reason"],["arcane","adj","神祕的；晦澀的","mysterious, known by few"],["arduous","adj","艱鉅的；費力的","difficult, strenuous"],["articulate","adj","口才好的；表達清楚的","well-spoken, clear"],["ascetic","adj","苦行的；禁慾的","self-denying, austere"],["assuage","v","緩和；撫慰","ease, soothe"],["audacious","adj","大膽的；魯莽的","bold, daring"],["austere","adj","嚴厲的；簡樸的","severe, plain"],["autonomous","adj","自主的；自治的","independent, self-governing"],["aver","v","斷言；堅稱","assert, declare"],["banal","adj","平庸的；陳腐的","commonplace, unoriginal"],["belie","v","掩飾；與…不符","contradict, give a false impression"],["benevolent","adj","仁慈的","kind, charitable"],["benign","adj","溫和的；良性的","harmless, gentle"],["bolster","v","支持；加強","support, strengthen"],["bombastic","adj","誇大的；浮誇的","pompous, overblown"],["boorish","adj","粗魯的","rude, ill-mannered"],["burgeon","v","迅速發展；萌芽","grow rapidly, flourish"],["burnish","v","擦亮；拋光","polish"],["buttress","v","支持；加固","support, reinforce"],["cacophony","n","刺耳的聲音","harsh noise"],["candid","adj","坦率的","frank, honest"],["capricious","adj","反覆無常的","fickle, unpredictable"],["castigate","v","嚴厲批評；懲罰","criticize severely"],["catalyst","n","催化劑；促成因素","something that speeds change"],["caustic","adj","尖刻的；腐蝕性的","biting, corrosive"],["censure","v","譴責；嚴厲批評","condemn, criticize formally"],["chicanery","n","欺騙；詭計","trickery, deception"],["circumspect","adj","謹慎的；周到的","cautious, prudent"],["coalesce","v","聯合；合併","unite, come together"],["cogent","adj","有說服力的","convincing, compelling"],["commensurate","adj","相稱的；相當的","proportionate, equal"],["complacent","adj","自滿的","self-satisfied, smug"],["compliant","adj","順從的","obedient, yielding"],["conciliatory","adj","安撫的；調解的","appeasing, peacemaking"],["condone","v","寬恕；縱容","overlook, excuse"],["confound","v","使困惑；混淆","confuse, baffle"],["connoisseur","n","鑑賞家；行家","expert judge of taste"],["contentious","adj","有爭議的；好爭論的","controversial, quarrelsome"],["contrite","adj","悔悟的","remorseful, sorry"],["conundrum","n","難題；謎","puzzle, difficult problem"],["converge","v","會合；趨於一致","come together, meet"],["convoluted","adj","複雜的；費解的","complicated, intricate"],["copious","adj","大量的；豐富的","abundant, plentiful"],["corroborate","v","證實","confirm, support with evidence"],["credulous","adj","輕信的","gullible, too trusting"],["cryptic","adj","神祕的；含義模糊的","mysterious, puzzling"],["cursory","adj","草率的；匆忙的","hasty, superficial"],["daunt","v","使氣餒；嚇倒","intimidate, discourage"],["dearth","n","缺乏；不足","scarcity, lack"],["debacle","n","慘敗；崩潰","disaster, fiasco"],["decorum","n","端莊；禮儀","proper behavior, propriety"],["deference","n","尊重；順從","respect, submission"],["delineate","v","描繪；劃定界線","describe, outline"],["denigrate","v","貶低；詆毀","belittle, defame"],["deride","v","嘲笑","mock, ridicule"],["derivative","adj","缺乏原創的；衍生的","unoriginal, copied"],["desiccate","v","使乾燥","dry out"],["desultory","adj","散漫的；無條理的","aimless, unfocused"],["deterrent","n","威懾物；阻礙","something that discourages"],["diatribe","n","抨擊；謾罵","bitter verbal attack"],["dichotomy","n","二分；對立","division into two opposites"],["diffident","adj","缺乏自信的；羞怯的","shy, lacking confidence"],["digress","v","離題","stray from the topic"],["dilatory","adj","拖延的；緩慢的","delaying, slow"],["dilettante","n","業餘愛好者；淺嘗者","amateur, dabbler"],["diligent","adj","勤奮的","hardworking, industrious"],["disabuse","v","糾正錯誤觀念","free from a mistaken belief"],["discern","v","辨別；察覺","perceive, distinguish"],["discordant","adj","不一致的；不和諧的","conflicting, harsh-sounding"],["discredit","v","使喪失信譽；使不可信","damage the reputation of, disprove"],["discrepancy","n","差異；不一致","inconsistency, difference"],["disinterested","adj","公正的；無私的","impartial, unbiased"],["disparage","v","貶低；輕視","belittle, speak ill of"],["disparate","adj","迥然不同的","fundamentally different"],["dispassionate","adj","冷靜的；不帶感情的","calm, objective"],["disseminate","v","散播；傳播","spread widely"],["dissonance","n","不和諧；不一致","discord, lack of harmony"],["divergent","adj","分歧的；不同的","differing, moving apart"],["dogmatic","adj","教條的；武斷的","opinionated, rigid in belief"],["dormant","adj","休眠的；潛伏的","inactive, sleeping"],["dubious","adj","可疑的；半信半疑的","doubtful, questionable"],["duplicity","n","欺騙；口是心非","deceit, double-dealing"],["ebullient","adj","熱情洋溢的","enthusiastic, exuberant"],["eccentric","adj","古怪的","odd, unconventional"],["eclectic","adj","兼容並蓄的；折衷的","drawn from varied sources"],["efficacy","n","功效；效力","effectiveness"],["effrontery","n","厚顏無恥","shameless boldness"],["elicit","v","引出；誘出","draw out, evoke"],["eloquent","adj","雄辯的；有說服力的","fluent, persuasive"],["elucidate","v","闡明","explain, clarify"],["elusive","adj","難以捉摸的","hard to catch or define"],["embellish","v","裝飾；加油添醋","decorate, exaggerate"],["emulate","v","仿效；努力趕上","imitate, try to equal"],["endemic","adj","地方性的；某地特有的","native to, prevalent in a place"],["enervate","v","使衰弱","weaken, drain of energy"],["engender","v","引起；產生","cause, give rise to"],["enigma","n","謎；難以理解的人事物","mystery, puzzle"],["ephemeral","adj","短暫的","short-lived, fleeting"],["equanimity","n","鎮定；沉著","calmness, composure"],["equivocal","adj","模稜兩可的；含糊的","ambiguous, unclear"],["equivocate","v","含糊其詞","speak vaguely to avoid commitment"],["erudite","adj","博學的","learned, scholarly"],["esoteric","adj","深奧的；只有內行懂的","understood by few"],["eulogy","n","頌詞；悼詞","speech of praise"],["euphemism","n","委婉語","mild word for a harsh one"],["exacerbate","v","使惡化","worsen, aggravate"],["exculpate","v","開脫；證明無罪","clear of blame"],["exigent","adj","緊急的；苛求的","urgent, demanding"],["exonerate","v","免除責任；宣告無罪","clear of blame, acquit"],["expedient","adj","權宜的；方便有利的","convenient, practical"],["explicit","adj","明確的；清楚的","clearly stated"],["extant","adj","現存的","still existing"],["extraneous","adj","無關的；外來的","irrelevant, unnecessary"],["facetious","adj","愛開玩笑的；不認真的","joking inappropriately"],["fallacious","adj","謬誤的","based on false reasoning"],["fastidious","adj","挑剔的；講究的","picky, meticulous"],["fathom","v","理解；看透","understand deeply"],["fawn","v","奉承；討好","flatter, grovel"],["feasible","adj","可行的","workable, possible"],["fervent","adj","熱烈的；熱情的","passionate, intense"],["flagrant","adj","公然的；明目張膽的","blatant, glaring"],["fledgling","adj","新手的；剛起步的","inexperienced, new"],["flout","v","藐視；公然違抗","openly disregard"],["foment","v","煽動；挑起","stir up, incite"],["forestall","v","預先阻止","prevent, head off"],["fortuitous","adj","偶然的；幸運的","happening by chance, lucky"],["frugal","adj","節儉的","thrifty, economical"],["futile","adj","無用的；徒勞的","pointless, useless"],["gainsay","v","否認；反駁","deny, contradict"],["garrulous","adj","喋喋不休的","talkative, wordy"],["germane","adj","有關的；切題的","relevant, pertinent"],["glib","adj","油嘴滑舌的","slick, superficially fluent"],["gratuitous","adj","無必要的；無端的","unwarranted, uncalled for"],["gregarious","adj","愛社交的；群居的","sociable, outgoing"],["guile","n","狡詐；詭計","cunning, deceit"],["gullible","adj","易受騙的","easily fooled"],["hackneyed","adj","陳腐的；老套的","cliched, overused"],["harangue","n","長篇抨擊；訓斥","long, angry speech"],["hedonism","n","享樂主義","pursuit of pleasure"],["hegemony","n","霸權；主導地位","dominance, leadership"],["heretical","adj","異端的","opposing accepted beliefs"],["homogeneous","adj","同質的；同類的","uniform, of the same kind"],["hyperbole","n","誇張","exaggeration"],["iconoclast","n","反傳統者","one who attacks cherished beliefs"],["idiosyncrasy","n","個人特質；怪癖","personal quirk"],["ignominious","adj","可恥的；不光彩的","shameful, disgraceful"],["immutable","adj","不可改變的","unchangeable"],["impair","v","損害；削弱","damage, weaken"],["impartial","adj","公正的；不偏不倚的","unbiased, fair"],["impassive","adj","面無表情的；無動於衷的","showing no emotion"],["impede","v","阻礙","hinder, obstruct"],["imperturbable","adj","沉著的；不易激動的","calm, unshakable"],["impervious","adj","不受影響的；不能滲透的","unaffected, impenetrable"],["impetuous","adj","衝動的；魯莽的","rash, impulsive"],["implacable","adj","無法安撫的；毫不寬容的","unable to be appeased"],["implicit","adj","含蓄的；不言明的","implied, unstated"],["inadvertent","adj","無意的；疏忽的","unintentional"],["inchoate","adj","剛開始的；未成形的","just begun, undeveloped"],["incongruous","adj","不協調的；不相稱的","out of place, inconsistent"],["inconsequential","adj","不重要的；無足輕重的","trivial, unimportant"],["indifferent","adj","漠不關心的","unconcerned, apathetic"],["indigenous","adj","本土的；土生土長的","native"],["indolent","adj","懶惰的","lazy"],["ineffable","adj","難以言喻的","indescribable"],["inert","adj","無活動力的；惰性的","inactive, motionless"],["ingenuous","adj","天真的；坦率的","naive, innocent"],["inherent","adj","固有的；與生俱來的","built-in, intrinsic"],["innocuous","adj","無害的","harmless"],["insipid","adj","乏味的；無味的","bland, dull"],["insular","adj","狹隘的；與世隔絕的","narrow-minded, isolated"],["intractable","adj","難處理的；倔強的","stubborn, hard to manage"],["intransigent","adj","不妥協的","uncompromising"],["intrepid","adj","無畏的","fearless, brave"],["inundate","v","淹沒；使應接不暇","flood, overwhelm"],["inveterate","adj","根深蒂固的；積習難改的","habitual, deep-rooted"],["irascible","adj","易怒的","easily angered"],["irresolute","adj","猶豫不決的","indecisive"],["itinerant","adj","巡迴的；流動的","traveling from place to place"],["laconic","adj","簡潔的；言簡意賅的","brief, using few words"],["lament","v","哀悼；惋惜","mourn, regret"],["laud","v","讚美","praise"],["lethargic","adj","昏昏欲睡的；無精打采的","sluggish, drowsy"],["levity","n","輕浮；輕率","lightheartedness, lack of seriousness"],["loquacious","adj","多話的","talkative"],["lucid","adj","清晰易懂的","clear, easy to understand"],["magnanimous","adj","寬宏大量的","generous, forgiving"],["malleable","adj","可塑的；易受影響的","pliable, adaptable"],["maverick","n","特立獨行的人","independent thinker, nonconformist"],["mendacious","adj","說謊的；虛假的","lying, dishonest"],["mercurial","adj","善變的","changeable, volatile"],["meticulous","adj","一絲不苟的","very careful, precise"],["misanthrope","n","厭世者；厭惡人類的人","one who hates people"],["mitigate","v","減輕；緩和","lessen, make less severe"],["mollify","v","安撫；使平靜","soothe, calm"],["morose","adj","陰鬱的；悶悶不樂的","gloomy, sullen"],["mundane","adj","平凡的；世俗的","ordinary, everyday"],["naive","adj","天真的；缺乏經驗的","innocent, unsophisticated"],["nascent","adj","新生的；初期的","emerging, just beginning"],["nebulous","adj","模糊的；朦朧的","vague, hazy"],["negligent","adj","疏忽的","careless"],["nonchalant","adj","若無其事的；漫不經心的","casually unconcerned"],["notorious","adj","惡名昭彰的","famous for something bad"],["novel","adj","新穎的","new, original"],["obdurate","adj","頑固的；冷酷的","stubborn, hard-hearted"],["obfuscate","v","使模糊；使困惑","make unclear, confuse"],["obsequious","adj","諂媚的；奉承的","fawning, overly submissive"],["obsolete","adj","過時的；被淘汰的","outdated, no longer used"],["obstinate","adj","固執的","stubborn"],["obviate","v","排除；使不必要","make unnecessary, prevent"],["occlude","v","堵塞；遮蔽","block, obstruct"],["onerous","adj","繁重的；麻煩的","burdensome"],["opaque","adj","不透明的；難懂的","not transparent, hard to understand"],["opportunism","n","機會主義","exploiting chances without principle"],["ostentatious","adj","炫耀的；賣弄的","showy, pretentious"],["painstaking","adj","煞費苦心的；仔細的","very careful, thorough"],["paradox","n","悖論；自相矛盾的事","seeming contradiction"],["paragon","n","典範；完美的榜樣","model of excellence"],["partisan","adj","有黨派偏見的","biased toward one side"],["paucity","n","缺乏；少量","scarcity, shortage"],["pedantic","adj","賣弄學問的；迂腐的","overly concerned with minor details"],["penchant","n","強烈的愛好；傾向","strong liking"],["perfunctory","adj","敷衍的；草率的","done without care, routine"],["peripheral","adj","次要的；周邊的","minor, on the edge"],["pernicious","adj","有害的；惡性的","harmful, destructive"],["perspicacious","adj","有洞察力的；敏銳的","insightful, shrewd"],["pervasive","adj","普遍的；遍布的","widespread"],["phlegmatic","adj","冷靜的；不易激動的","calm, unemotional"],["placate","v","安撫；撫慰","soothe, appease"],["plausible","adj","貌似合理的；可信的","believable, reasonable"],["plethora","n","過多；過剩","excess, overabundance"],["pragmatic","adj","務實的","practical, realistic"],["precarious","adj","不穩定的；危險的","unstable, risky"],["precipitate","v","促成；使突然發生","cause suddenly, hasten"],["preclude","v","阻止；排除","prevent, rule out"],["precocious","adj","早熟的","advanced for one's age"],["predilection","n","偏好","preference, partiality"],["prescient","adj","有先見之明的","having foresight"],["pretentious","adj","自命不凡的；做作的","showy, self-important"],["prevaricate","v","支吾其詞；搪塞","evade the truth, lie"],["pristine","adj","原始的；純淨的","unspoiled, pure"],["probity","n","正直；誠實","integrity, honesty"],["proclivity","n","傾向；癖好","tendency, inclination"],["prodigal","adj","揮霍的；浪費的","wasteful, extravagant"],["prodigious","adj","巨大的；驚人的","enormous, extraordinary"],["profound","adj","深刻的；意義深遠的","deep, insightful"],["proliferate","v","激增；擴散","multiply, spread rapidly"],["prolific","adj","多產的","highly productive"],["propensity","n","傾向；習性","natural tendency"],["propitious","adj","吉利的；有利的","favorable"],["prosaic","adj","平淡無奇的；乏味的","dull, ordinary"],["provincial","adj","眼界狹窄的；鄉下的","narrow-minded, unsophisticated"],["prudent","adj","審慎的；精明的","wise, careful"],["pugnacious","adj","好鬥的","quarrelsome, combative"],["quiescent","adj","靜止的；沉寂的","inactive, quiet"],["quixotic","adj","不切實際的；空想的","idealistic, impractical"],["rarefied","adj","曲高和寡的；稀薄的","lofty, exclusive; thin"],["recalcitrant","adj","不服從的；桀驁不馴的","defiant, uncooperative"],["recant","v","撤回；公開放棄主張","take back, renounce"],["recondite","adj","深奧的；鮮為人知的","obscure, little known"],["redundant","adj","多餘的；重複的","unnecessary, repetitive"],["refute","v","反駁；駁斥","disprove"],["relegate","v","降級；貶謫","demote, assign to a lower position"],["relinquish","v","放棄；讓出","give up, surrender"],["repudiate","v","否認；拒絕接受","reject, disown"],["rescind","v","廢除；撤銷","cancel, revoke"],["resilient","adj","有韌性的；能迅速恢復的","able to recover quickly"],["reticent","adj","沉默寡言的；有所保留的","reserved, quiet"],["reverent","adj","恭敬的；虔誠的","deeply respectful"],["rhetoric","n","修辭；華麗的言詞","persuasive language"],["rudimentary","adj","基本的；初步的","basic, undeveloped"],["sagacious","adj","睿智的","wise, shrewd"],["salubrious","adj","有益健康的","healthful"],["sanction","v","批准；制裁","approve; penalize"],["sardonic","adj","譏諷的；嘲笑的","mocking, cynical"],["satiate","v","使充分滿足","satisfy fully"],["scrupulous","adj","嚴謹的；有道德原則的","careful, principled"],["scrutinize","v","仔細檢查","examine closely"],["soporific","adj","催眠的；使人昏昏欲睡的","sleep-inducing"],["specious","adj","似是而非的","seemingly true but false"],["sporadic","adj","零星的；偶發的","occasional, irregular"],["spurious","adj","假的；偽造的","false, fake"],["stoic","adj","堅忍的；不以苦樂為意的","enduring pain without complaint"],["stolid","adj","不動感情的；木訥的","unemotional, impassive"],["strident","adj","刺耳的；強硬的","harsh, loud"],["substantiate","v","證實；證明","prove, support with evidence"],["subtle","adj","微妙的；細微的","delicate, not obvious"],["succinct","adj","簡潔的","concise, brief"],["superficial","adj","表面的；膚淺的","shallow, on the surface"],["superfluous","adj","多餘的；不必要的","unnecessary, excess"],["supplant","v","取代","replace"],["surreptitious","adj","祕密的；偷偷摸摸的","secret, stealthy"],["sycophant","n","馬屁精；奉承者","flatterer, yes-man"],["taciturn","adj","沉默寡言的","quiet, uncommunicative"],["tangential","adj","離題的；略為相關的","only slightly related"],["tenacious","adj","頑強的；堅持的","persistent, determined"],["tenuous","adj","薄弱的；站不住腳的","weak, flimsy"],["terse","adj","簡短的；簡練的","brief, curt"],["timorous","adj","膽怯的","timid, fearful"],["torpor","n","遲鈍；麻木","sluggishness, inactivity"],["tortuous","adj","曲折的；拐彎抹角的","winding, complicated"],["tractable","adj","溫順的；易處理的","easily managed, obedient"],["transient","adj","短暫的；過渡的","temporary, passing"],["trite","adj","陳腐的；老生常談的","overused, unoriginal"],["trivial","adj","瑣碎的；不重要的","unimportant"],["truculent","adj","好鬥的；兇猛的","aggressive, defiant"],["ubiquitous","adj","無所不在的","found everywhere"],["undermine","v","暗中破壞；削弱","weaken, sabotage"],["unequivocal","adj","明確的；毫不含糊的","clear, unambiguous"],["vacillate","v","猶豫；搖擺不定","waver, be indecisive"],["venerate","v","尊敬；崇敬","revere, respect deeply"],["veracity","n","真實性；誠實","truthfulness"],["verbose","adj","冗長的；囉嗦的","wordy"],["vex","v","使惱怒；使苦惱","annoy, irritate"],["viable","adj","可行的；能存活的","workable, capable of surviving"],["vilify","v","誹謗；中傷","defame, slander"],["vindicate","v","證明…正確；為…辯白","clear of blame, justify"],["viscous","adj","黏稠的","thick, sticky"],["vituperate","v","謾罵；責罵","berate, criticize harshly"],["volatile","adj","易變的；易揮發的","unstable, explosive"],["voracious","adj","貪婪的；求知慾強的","ravenous, insatiable"],["wary","adj","小心的；警惕的","cautious, watchful"],["whimsical","adj","異想天開的；反覆無常的","fanciful, playful"],["zealous","adj","熱心的；狂熱的","fervent, enthusiastic"]];
+var ORDER=[300,25,297,293,324,94,345,20,37,328,310,342,229,26,160,192,146,240,298,161,255,166,295,309,294,43,54,170,246,306,134,125,305,184,95,57,195,261,120,224,14,272,38,39,52,31,97,304,135,73,329,22,286,83,201,168,239,115,241,308,245,96,89,136,284,302,17,204,330,137,268,337,63,28,45,173,130,238,182,335,53,244,262,334,85,42,313,257,274,15,148,321,66,343,323,79,264,162,212,179,318,133,270,254,100,236,333,104,188,90,178,127,16,60,34,70,49,71,282,5,140,131,76,219,250,51,50,138,36,117,159,98,266,207,55,59,64,30,58,199,273,277,232,4,152,211,280,126,292,157,213,56,113,307,194,61,221,153,1,46,103,267,187,105,233,189,278,88,227,301,208,279,228,118,196,116,260,216,10,7,35,145,290,296,82,235,276,259,226,158,190,248,210,203,72,65,87,265,150,119,185,230,164,144,183,78,218,165,67,253,205,176,336,181,186,198,33,312,338,331,109,41,287,243,191,175,68,32,327,214,174,77,209,108,172,340,86,167,48,249,197,303,128,102,132,124,93,283,75,322,84,154,147,206,285,275,234,18,319,269,180,91,316,106,129,215,62,155,101,114,237,107,326,92,252,163,231,9,110,69,169,139,24,6,141,143,142,341,47,171,220,339,258,12,19,112,222,242,177,21,299,111,8,291,149,281,325,0,256,223,289,347,29,200,251,121,3,225,311,123,332,317,288,315,2,314,346,44,263,271,193,122,27,74,247,40,13,320,99,81,156,202,23,80,151,344,217,11];
+var POS={adj:"形容詞",v:"動詞",n:"名詞"};
+var GAP=[0,1,2,4,7,14];
+var LS="gre-vocab-v1";
+function $(id){return document.getElementById(id)}
+function esc(s){return String(s==null?"":s).replace(/[&<>"']/g,function(c){return{"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]})}
+function pad(n){return n<10?"0"+n:""+n}
+function iso(d){return d.getFullYear()+"-"+pad(d.getMonth()+1)+"-"+pad(d.getDate())}
+function addDays(s,n){var p=s.split("-"),d=new Date(+p[0],+p[1]-1,+p[2]);d.setDate(d.getDate()+n);return iso(d)}
+function shuffle(a){for(var i=a.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1)),t=a[i];a[i]=a[j];a[j]=t}return a}
+
+var TODAY=iso(new Date());
+var canSave=true;
+var S={cards:{},perDay:20,day:"",newToday:0,doneToday:0};
+function load(){
+  try{var r=localStorage.getItem(LS);if(r){var d=JSON.parse(r);if(d&&typeof d==="object"){
+    S.cards=d.cards&&typeof d.cards==="object"?d.cards:{};S.perDay=+d.perDay||20;S.day=d.day||"";S.newToday=+d.newToday||0;S.doneToday=+d.doneToday||0}}}
+  catch(e){canSave=false}
+  rollDay();
+}
+function rollDay(){if(S.day!==TODAY){S.day=TODAY;S.newToday=0;S.doneToday=0}}
+function save(){try{localStorage.setItem(LS,JSON.stringify(S));canSave=true}catch(e){canSave=false}
+  $("saveNote").textContent=canSave?"進度存在這台裝置":"這裡無法儲存，關掉後進度會消失"}
+function card(i){return S.cards[WORDS[i][0]]}
+function box(i){var c=card(i);return c?c.b:0}
+function status(i){var b=box(i);return b===0?["new","新字"]:b>=4?["known","已熟"]:["learn","學習中"]}
+
+/* ---------- 複習 ---------- */
+var view="study",queue=[],cur=-1,shown=false,sessionTotal=0,sessionDone=0;
+function buildQueue(extra){
+  var due=[],fresh=[],i;
+  for(i=0;i<WORDS.length;i++){var c=card(i);if(c&&c.b>0&&c.d<=TODAY)due.push(i)}
+  var room=Math.max(0,S.perDay-S.newToday)+(extra||0);
+  for(i=0;i<ORDER.length&&fresh.length<room;i++){if(box(ORDER[i])===0)fresh.push(ORDER[i])}
+  queue=shuffle(due).concat(fresh);sessionTotal=queue.length;sessionDone=0;next();
+}
+function next(){cur=queue.length?queue.shift():-1;shown=false}
+function rate(r){
+  if(cur<0)return;
+  var w=WORDS[cur][0],c=S.cards[w]||{b:0,d:TODAY},wasNew=c.b===0;
+  if(r===0){c.b=1;c.d=TODAY;queue.splice(Math.min(4,queue.length),0,cur);sessionTotal++}
+  else if(r===1){c.b=Math.max(1,c.b);c.d=addDays(TODAY,1)}
+  else{c.b=wasNew?3:Math.min(5,c.b+1);c.d=addDays(TODAY,GAP[c.b])}
+  S.cards[w]=c;if(wasNew)S.newToday++;S.doneToday++;sessionDone++;
+  save();next();render();
+}
+function speak(t){try{if(!window.speechSynthesis)return;speechSynthesis.cancel();var u=new SpeechSynthesisUtterance(t);u.lang="en-US";u.rate=.9;speechSynthesis.speak(u)}catch(e){}}
+
+function renderStats(){
+  var due=0,learned=0,known=0;
+  for(var i=0;i<WORDS.length;i++){var c=card(i);if(c&&c.b>0){learned++;if(c.b>=4)known++;if(c.d<=TODAY)due++}}
+  $("stats").innerHTML=
+   '<div class="stat"><span class="k">待複習</span><span class="v">'+due+'</span></div>'+
+   '<div class="stat"><span class="k">今天新字</span><span class="v">'+S.newToday+'<small>/ '+S.perDay+'</small></span></div>'+
+   '<div class="stat"><span class="k">已學</span><span class="v">'+learned+'<small>/ '+WORDS.length+'</small></span></div>'+
+   '<div class="stat"><span class="k">已熟</span><span class="v">'+known+'</span></div>';
+}
+function perDaySelect(){
+  var o="";[10,20,30,40,60].forEach(function(n){o+='<option value="'+n+'"'+(n===S.perDay?" selected":"")+'>'+n+' 個</option>'});
+  return '<label class="sub" for="perDay">每天新字</label><select id="perDay">'+o+'</select>';
+}
+function renderStudy(){
+  var h='<section class="panel">';
+  if(cur<0){
+    var left=0;for(var i=0;i<WORDS.length;i++)if(box(i)===0)left++;
+    h+='<div class="card"><div class="done-big">'+(S.doneToday?"今天的進度完成了":"現在沒有要複習的字")+'</div>'+
+       '<div class="en">'+(S.doneToday?"今天一共過了 "+S.doneToday+" 張卡。":"")+(left?"還有 "+left+" 個新字沒學。":"全部的字都學過了，明天再回來複習。")+'</div></div>';
+    h+='<div class="row between"><div class="row">'+perDaySelect()+'</div>'+(left?'<button class="btn" type="button" data-act="more">再學 10 個新字</button>':"")+'</div>';
+  }else{
+    var w=WORDS[cur],st=status(cur),pct=sessionTotal?Math.round(sessionDone/sessionTotal*100):0;
+    h+='<div class="progress"><span>這一輪 '+sessionDone+' / '+sessionTotal+'</span><div class="bar"><i style="width:'+pct+'%"></i></div></div>';
+    h+='<div class="card"><span class="tag '+st[0]+'">'+st[1]+'</span><div class="word" lang="en">'+esc(w[0])+'</div><div class="pos">'+POS[w[1]]+'</div>'+
+       (shown?'<div class="zh">'+esc(w[2])+'</div><div class="en" lang="en">'+esc(w[3])+'</div>':'<div class="en">先在心裡想出意思，再看答案</div>')+
+       '<button class="link" type="button" data-act="speak">聽發音</button></div>';
+    h+=shown?'<div class="rate">'+
+        '<button class="btn bad" type="button" data-rate="0">不記得<small>等一下再考</small></button>'+
+        '<button class="btn mid" type="button" data-rate="1">有點印象<small>明天再考</small></button>'+
+        '<button class="btn good" type="button" data-rate="2">記得<small>過幾天再考</small></button></div>'
+      :'<button class="btn" type="button" data-act="show" id="showBtn">看答案</button>';
+    h+='<div class="row">'+perDaySelect()+'</div>';
+  }
+  $("main").innerHTML=h+"</section>";
+}
+
+/* ---------- 測驗 ---------- */
+var quiz=null;
+function startQuiz(){
+  var pool=[],i;for(i=0;i<WORDS.length;i++)if(box(i)>0)pool.push(i);
+  var fromLearned=pool.length>=4;
+  if(!fromLearned){pool=[];for(i=0;i<WORDS.length;i++)pool.push(i)}
+  quiz={items:shuffle(pool).slice(0,10),n:0,score:0,picked:-1,opts:null,fromLearned:fromLearned,wrong:[]};
+  makeOpts();
+}
+function makeOpts(){
+  var a=quiz.items[quiz.n],same=[],i;
+  for(i=0;i<WORDS.length;i++)if(i!==a&&WORDS[i][1]===WORDS[a][1]&&WORDS[i][2]!==WORDS[a][2])same.push(i);
+  quiz.opts=shuffle([a].concat(shuffle(same).slice(0,3)));quiz.picked=-1;
+}
+function renderQuiz(){
+  var h='<section class="panel">';
+  if(!quiz){
+    h+='<h2>選出正確的中文意思</h2><p class="sub" style="margin:0">一次 10 題，從你學過的字裡出題；學過的字不到 4 個時，會從全部的字出題。答錯的字會排回今天的複習。</p>'+
+       '<button class="btn" type="button" data-act="quiz-start">開始測驗</button>';
+  }else if(quiz.n>=quiz.items.length){
+    h+='<div class="card"><div class="done-big">答對 '+quiz.score+' / '+quiz.items.length+' 題</div>'+
+       (quiz.wrong.length?'<div class="en">答錯的字：<span lang="en">'+quiz.wrong.map(function(i){return esc(WORDS[i][0])}).join("、")+'</span></div>':'<div class="en">全部答對。</div>')+'</div>'+
+       '<button class="btn" type="button" data-act="quiz-start">再測一次</button>';
+  }else{
+    var a=quiz.items[quiz.n],w=WORDS[a],done=quiz.picked>=0;
+    h+='<div class="progress"><span>第 '+(quiz.n+1)+' / '+quiz.items.length+' 題</span><div class="bar"><i style="width:'+Math.round(quiz.n/quiz.items.length*100)+'%"></i></div></div>';
+    h+='<div class="card" style="min-height:150px"><div class="word" lang="en">'+esc(w[0])+'</div><div class="pos">'+POS[w[1]]+'</div>'+
+       '<button class="link" type="button" data-act="speak">聽發音</button></div><div class="opts">';
+    quiz.opts.forEach(function(o){
+      var cls=done?(o===a?" right":o===quiz.picked?" wrong":""):"";
+      h+='<button class="opt'+cls+'" type="button" data-opt="'+o+'"'+(done?" disabled":"")+'>'+(done&&o===a?"✓ ":done&&o===quiz.picked?"✗ ":"")+esc(WORDS[o][2])+'</button>';
+    });
+    h+='</div>';
+    if(done){h+='<div class="row between"><span class="verdict '+(quiz.picked===a?"ok":"no")+'">'+(quiz.picked===a?"答對了":"答錯了，正確答案是「"+esc(w[2])+"」")+'</span>'+
+       '<button class="btn" type="button" data-act="quiz-next" id="nextBtn">'+(quiz.n+1>=quiz.items.length?"看結果":"下一題")+'</button></div>'}
+  }
+  $("main").innerHTML=h+"</section>";
+}
+function pick(o){
+  if(!quiz||quiz.picked>=0)return;
+  var a=quiz.items[quiz.n];quiz.picked=o;
+  if(o===a)quiz.score++;
+  else{quiz.wrong.push(a);var c=S.cards[WORDS[a][0]];if(c&&c.b>0){c.b=1;c.d=TODAY;save();if(queue.indexOf(a)<0&&cur!==a){queue.push(a);sessionTotal++}}}
+  render();var b=$("nextBtn");if(b)b.focus();
+}
+
+/* ---------- 單字表 ---------- */
+var q="",filter="all";
+function renderList(keepFocus){
+  var h='<section class="panel"><div class="row"><div style="flex:1;min-width:160px"><label class="sub" for="q">搜尋英文或中文</label><input type="search" id="q" value="'+esc(q)+'" autocomplete="off"></div>'+
+    '<div><label class="sub" for="flt" style="display:block">顯示</label><select id="flt">'+
+    [["all","全部"],["new","新字"],["learn","學習中"],["known","已熟"]].map(function(f){return '<option value="'+f[0]+'"'+(f[0]===filter?" selected":"")+'>'+f[1]+'</option>'}).join("")+
+    '</select></div></div><div class="list" id="listBody"></div></section>';
+  if(!keepFocus)$("main").innerHTML=h;
+  var k=q.trim().toLowerCase(),rows="",n=0;
+  for(var i=0;i<WORDS.length;i++){
+    var w=WORDS[i],st=status(i);
+    if(filter!=="all"&&st[0]!==filter)continue;
+    if(k&&w[0].indexOf(k)<0&&w[2].indexOf(k)<0&&w[3].toLowerCase().indexOf(k)<0)continue;
+    n++;
+    rows+='<div class="item"><span class="w" lang="en">'+esc(w[0])+'<i>'+POS[w[1]]+'</i></span><span class="t"><span class="tag '+st[0]+'">'+st[1]+'</span></span>'+
+          '<span class="m">'+esc(w[2])+'　<span lang="en">'+esc(w[3])+'</span></span></div>';
+  }
+  $("listBody").innerHTML=n?rows:'<div class="empty">沒有符合的單字</div>';
+}
+
+function render(){
+  renderStats();
+  var tabs=document.querySelectorAll(".tabs button");
+  for(var i=0;i<tabs.length;i++)tabs[i].setAttribute("aria-selected",tabs[i].dataset.view===view?"true":"false");
+  if(view==="study")renderStudy();else if(view==="quiz")renderQuiz();else renderList();
+}
+
+document.addEventListener("click",function(e){
+  var t=e.target.closest("button");if(!t)return;
+  if(t.dataset.view){view=t.dataset.view;render();return}
+  if(t.dataset.rate){rate(+t.dataset.rate);return}
+  if(t.dataset.opt){pick(+t.dataset.opt);return}
+  var a=t.dataset.act;
+  if(a==="show"){shown=true;render()}
+  else if(a==="speak"){speak(WORDS[view==="quiz"&&quiz?quiz.items[quiz.n]:cur][0])}
+  else if(a==="more"){buildQueue(10);render()}
+  else if(a==="quiz-start"){startQuiz();render()}
+  else if(a==="quiz-next"){quiz.n++;if(quiz.n<quiz.items.length)makeOpts();render()}
+});
+document.addEventListener("change",function(e){
+  if(e.target.id==="perDay"){S.perDay=+e.target.value;save();if(cur<0){buildQueue();}render()}
+  else if(e.target.id==="flt"){filter=e.target.value;renderList(true)}
+});
+document.addEventListener("input",function(e){if(e.target.id==="q"){q=e.target.value;renderList(true)}});
+document.addEventListener("keydown",function(e){
+  if(view!=="study"||cur<0||/^(INPUT|SELECT|BUTTON)$/.test(e.target.tagName))return;
+  if(!shown&&(e.key===" "||e.key==="Enter")){e.preventDefault();shown=true;render()}
+  else if(shown&&(e.key==="1"||e.key==="2"||e.key==="3"))rate(+e.key-1);
+});
+document.addEventListener("visibilitychange",function(){
+  if(document.hidden)return;var t=iso(new Date());
+  if(t!==TODAY){TODAY=t;rollDay();setToday();buildQueue();render()}
+});
+function setToday(){var n=new Date();$("todayLine").textContent=(n.getMonth()+1)+" 月 "+n.getDate()+" 日　共 "+WORDS.length+" 個高頻字"}
+if("serviceWorker" in navigator){window.addEventListener("load",function(){navigator.serviceWorker.register("sw.js").catch(function(){})})}
+
+load();setToday();save();buildQueue();render();
+})();
+</script>
+</body>
+</html>
