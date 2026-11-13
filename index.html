@@ -1,0 +1,570 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>讀書計畫</title>
+<meta name="theme-color" content="#f2f4f8" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#11151c" media="(prefers-color-scheme: dark)">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-180.png">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="讀書計畫">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=Noto+Serif+TC:wght@700&display=swap" rel="stylesheet">
+<style>
+/* 版面想法：像一本週計畫本。左邊是一週七天的直式行事曆，右邊是科目進度；藍筆寫計畫，紅筆標考試與過期。 */
+:root{
+  --paper:#f2f4f8;
+  --surface:#ffffff;
+  --ink:#18202e;
+  --muted:#5b6676;
+  --line:#d8dde6;
+  --accent:#2447b8;
+  --accent-soft:#e7ecfb;
+  --on-accent:#ffffff;
+  --mark:#bf362e;
+  --mark-soft:#fbeceb;
+  --good:#1f7a55;
+  --s1:#2f6fd6; --s2:#c2572a; --s3:#2c8a6b; --s4:#8a4fc0; --s5:#a47a0a; --s6:#c23a6b;
+  --font-display:"Noto Serif TC","Songti TC","PMingLiU",serif;
+  --font-body:"Noto Sans TC","PingFang TC","Microsoft JhengHei",system-ui,sans-serif;
+  --r:10px;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    color-scheme:dark;
+    --paper:#11151c; --surface:#1a2029; --ink:#e7ebf2; --muted:#98a3b3; --line:#2d3542;
+    --accent:#8fa8ff; --accent-soft:#222c4a; --on-accent:#0f1420;
+    --mark:#ff8a7d; --mark-soft:#3a2020; --good:#5fc79a;
+    --s1:#6ea2f5; --s2:#f08a5c; --s3:#5cc7a2; --s4:#b98cf0; --s5:#dbb245; --s6:#f07aa3;
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --paper:#11151c; --surface:#1a2029; --ink:#e7ebf2; --muted:#98a3b3; --line:#2d3542;
+  --accent:#8fa8ff; --accent-soft:#222c4a; --on-accent:#0f1420;
+  --mark:#ff8a7d; --mark-soft:#3a2020; --good:#5fc79a;
+  --s1:#6ea2f5; --s2:#f08a5c; --s3:#5cc7a2; --s4:#b98cf0; --s5:#dbb245; --s6:#f07aa3;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--paper);color:var(--ink);font-family:var(--font-body);font-size:15px;line-height:1.6;
+  font-variant-numeric:tabular-nums;-webkit-text-size-adjust:100%}
+button,input,select{font:inherit;color:inherit}
+.wrap{max-width:1080px;margin:0 auto;padding:28px 20px 64px;display:flex;flex-direction:column;gap:20px}
+
+header.top{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:8px 20px;
+  border-bottom:2px solid var(--ink);padding-bottom:12px}
+h1{font-family:var(--font-display);font-size:30px;line-height:1.2;margin:0;letter-spacing:.04em}
+.today-line{color:var(--muted);font-size:14px}
+.status{font-size:13px;color:var(--muted);display:flex;align-items:center;gap:6px}
+.status::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--muted)}
+.status[data-kind="ok"]::before{background:var(--good)}
+.status[data-kind="warn"]::before{background:var(--mark)}
+.status[data-kind="busy"]::before{background:var(--accent)}
+
+h2{font-size:15px;font-weight:700;margin:0;letter-spacing:.06em}
+
+/* 摘要 */
+.summary{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+.stat{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:12px 14px;
+  display:flex;flex-direction:column;gap:2px;min-width:0}
+.stat .k{font-size:12.5px;color:var(--muted)}
+.stat .v{font-family:var(--font-display);font-size:24px;line-height:1.25}
+.stat .v small{font-family:var(--font-body);font-size:13px;font-weight:400;color:var(--muted);margin-left:4px}
+.stat .n{font-size:12.5px;color:var(--muted);overflow-wrap:anywhere}
+.stat.alert .v{color:var(--mark)}
+.bar{height:6px;border-radius:3px;background:var(--line);overflow:hidden;margin-top:6px}
+.bar i{display:block;height:100%;background:var(--c,var(--accent));border-radius:3px}
+
+/* 範例提示 */
+.notice{background:var(--accent-soft);border:1px solid var(--accent);border-radius:var(--r);padding:10px 14px;
+  display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center;justify-content:space-between}
+.notice p{margin:0;font-size:14px}
+.tag{display:inline-block;font-size:12px;font-weight:700;border:1px solid currentColor;border-radius:4px;padding:0 6px;
+  margin-right:6px;color:var(--accent)}
+
+.layout{display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:20px;align-items:start}
+.col{display:flex;flex-direction:column;gap:16px;min-width:0}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:16px;
+  display:flex;flex-direction:column;gap:12px;min-width:0}
+.panel-head{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px}
+
+/* 表單 */
+.form{display:grid;gap:10px;grid-template-columns:minmax(0,2.2fr) minmax(0,1.1fr) minmax(0,1.3fr) minmax(0,.9fr) auto;align-items:end}
+.field{display:flex;flex-direction:column;gap:3px;min-width:0}
+.field label{font-size:12.5px;color:var(--muted)}
+input[type=text],input[type=date],input[type=number],select{
+  width:100%;min-width:0;height:38px;padding:0 10px;border:1px solid var(--line);border-radius:7px;background:var(--paper)}
+input::placeholder{color:var(--muted);opacity:.8}
+.btn{height:38px;padding:0 16px;border-radius:7px;border:1px solid var(--accent);background:var(--accent);
+  color:var(--on-accent);font-weight:500;cursor:pointer;white-space:nowrap}
+.btn.ghost{background:transparent;color:var(--accent)}
+.btn.small{height:30px;padding:0 10px;font-size:13px}
+.link{background:none;border:0;padding:2px 4px;color:var(--muted);font-size:13px;cursor:pointer;border-radius:4px;white-space:nowrap}
+.link:hover{color:var(--accent);background:var(--accent-soft)}
+.link.danger:hover{color:var(--mark);background:var(--mark-soft)}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.err{color:var(--mark);font-size:13px;margin:0}
+
+/* 週曆 */
+.weeknav{display:flex;align-items:center;gap:6px}
+.week-title{font-family:var(--font-display);font-size:18px}
+.day{display:grid;grid-template-columns:76px minmax(0,1fr);gap:12px;padding:12px 0;border-top:1px solid var(--line)}
+.day:first-child{border-top:0;padding-top:0}
+.day-label{display:flex;flex-direction:column;gap:2px;align-items:flex-start}
+.day-label .wd{font-size:12.5px;color:var(--muted)}
+.day-label .dt{font-family:var(--font-display);font-size:20px;line-height:1.1}
+.day-label .mins{font-size:12px;color:var(--muted)}
+.day.is-today .dt{color:var(--accent)}
+.pill{font-size:11.5px;font-weight:700;background:var(--accent);color:var(--on-accent);border-radius:99px;padding:0 8px}
+.day.is-past .dt{color:var(--muted)}
+.tasks{display:flex;flex-direction:column;gap:6px;min-width:0}
+.task{display:flex;align-items:center;gap:10px;padding:7px 10px;border:1px solid var(--line);border-left:4px solid var(--c,var(--muted));
+  border-radius:7px;background:var(--paper);min-width:0}
+.task label{display:flex;align-items:center;gap:10px;flex:1;min-width:0;cursor:pointer}
+.task input[type=checkbox]{width:18px;height:18px;flex:none;accent-color:var(--accent);margin:0}
+.task .ttl{overflow-wrap:anywhere;min-width:0}
+.task.done .ttl{text-decoration:line-through;color:var(--muted)}
+.task .meta{display:flex;flex-wrap:wrap;justify-content:flex-end;align-items:center;gap:2px 8px;font-size:12.5px;color:var(--muted);flex:none;max-width:55%}
+.chip{display:inline-flex;align-items:center;gap:5px;white-space:nowrap}
+.chip::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--c,var(--muted))}
+.empty{color:var(--muted);font-size:13.5px;display:flex;align-items:center;gap:8px;min-height:30px}
+.overdue{border-color:var(--mark)}
+.overdue h2{color:var(--mark)}
+
+/* 科目 */
+.subject{display:flex;flex-direction:column;gap:2px;padding:10px 0;border-top:1px solid var(--line)}
+.subject:first-of-type{border-top:0;padding-top:0}
+.subject .row{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.subject .name{font-weight:700;display:flex;align-items:center;gap:8px;min-width:0;overflow-wrap:anywhere}
+.subject .name::before{content:"";width:10px;height:10px;border-radius:3px;background:var(--c);flex:none}
+.subject .sub{font-size:12.5px;color:var(--muted)}
+.subject .exam.soon{color:var(--mark);font-weight:500}
+.sform{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px;align-items:end;border-top:1px solid var(--line);padding-top:12px}
+.sform .btn{grid-column:1/-1}
+
+.toast{position:fixed;left:50%;bottom:20px;transform:translateX(-50%);background:var(--ink);color:var(--paper);
+  border-radius:8px;padding:8px 8px 8px 14px;display:flex;align-items:center;gap:10px;font-size:14px;max-width:calc(100% - 32px)}
+.toast[hidden]{display:none}
+.toast button{background:none;border:1px solid currentColor;border-radius:6px;color:inherit;padding:2px 10px;cursor:pointer}
+
+@media (max-width:900px){
+  .layout{grid-template-columns:minmax(0,1fr)}
+  .summary{grid-template-columns:repeat(2,1fr)}
+  .form{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .form .f-title{grid-column:1/-1}
+  .form .btn{grid-column:1/-1}
+}
+@media (max-width:480px){
+  .wrap{padding:20px 16px 56px}
+  h1{font-size:26px}
+  .day{grid-template-columns:54px minmax(0,1fr);gap:8px}
+  .task{flex-wrap:wrap}
+  .task .meta{max-width:100%;justify-content:flex-start;padding-left:28px;flex:1 1 100%}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div>
+      <h1>讀書計畫</h1>
+      <div class="today-line" id="todayLine"></div>
+    </div>
+    <div class="status" id="status" data-kind="busy" role="status">讀取中</div>
+  </header>
+
+  <section class="summary" id="summary" aria-label="進度摘要"></section>
+
+  <div id="notice"></div>
+
+  <div class="layout">
+    <div class="col">
+      <section class="panel" aria-labelledby="addH">
+        <h2 id="addH">新增任務</h2>
+        <form class="form" id="taskForm" novalidate>
+          <div class="field f-title">
+            <label for="fTitle">要讀什麼</label>
+            <input type="text" id="fTitle" maxlength="80" placeholder="例如：英文單字 Unit 5" autocomplete="off">
+          </div>
+          <div class="field">
+            <label for="fSubject">科目</label>
+            <select id="fSubject"></select>
+          </div>
+          <div class="field">
+            <label for="fDate">日期</label>
+            <input type="date" id="fDate">
+          </div>
+          <div class="field">
+            <label for="fMin">預估分鐘</label>
+            <input type="number" id="fMin" min="5" max="600" step="5" value="45" inputmode="numeric">
+          </div>
+          <button class="btn" type="submit">加入計畫</button>
+        </form>
+        <p class="err" id="taskErr" hidden></p>
+      </section>
+
+      <div id="overdue"></div>
+
+      <section class="panel" aria-labelledby="weekTitle">
+        <div class="panel-head">
+          <div class="week-title" id="weekTitle"></div>
+          <div class="weeknav">
+            <button class="btn ghost small" type="button" data-action="week" data-d="-1" aria-label="上一週">‹ 上一週</button>
+            <button class="btn ghost small" type="button" data-action="week" data-d="0">本週</button>
+            <button class="btn ghost small" type="button" data-action="week" data-d="1" aria-label="下一週">下一週 ›</button>
+          </div>
+        </div>
+        <div id="week"></div>
+      </section>
+    </div>
+
+    <aside class="col">
+      <section class="panel" aria-labelledby="subH">
+        <h2 id="subH">科目進度</h2>
+        <div id="subjects"></div>
+        <form class="sform" id="subjectForm" novalidate>
+          <div class="field">
+            <label for="sName">新科目</label>
+            <input type="text" id="sName" maxlength="20" placeholder="例如：化學" autocomplete="off">
+          </div>
+          <div class="field">
+            <label for="sExam">考試日期（可不填）</label>
+            <input type="date" id="sExam">
+          </div>
+          <button class="btn ghost" type="submit">新增科目</button>
+        </form>
+        <p class="err" id="subErr" hidden></p>
+      </section>
+      <section class="panel" aria-labelledby="bkH">
+        <h2 id="bkH">備份</h2>
+        <p class="sub" style="margin:0;font-size:13px;color:var(--muted)">計畫只存在這台裝置。匯出的檔案可以在另一台裝置匯入；匯入會取代目前的計畫。</p>
+        <div style="display:flex;flex-wrap:wrap;gap:8px">
+          <button class="btn ghost small" type="button" id="bkExport">匯出備份</button>
+          <label class="btn ghost small" for="bkFile" style="display:inline-flex;align-items:center">匯入備份</label>
+          <input type="file" id="bkFile" accept="application/json,.json" style="position:absolute;width:1px;height:1px;opacity:0">
+        </div>
+        <p class="err" id="bkMsg" hidden></p>
+      </section>
+    </aside>
+  </div>
+</div>
+
+<div class="toast" id="toast" hidden role="status">
+  <span id="toastMsg"></span>
+  <button type="button" data-action="undo">復原</button>
+</div>
+
+<script>
+(function(){
+"use strict";
+var WD=["日","一","二","三","四","五","六"];
+var LS="study-plan-v1";
+function $(id){return document.getElementById(id)}
+function esc(s){return String(s==null?"":s).replace(/[&<>"']/g,function(c){return{"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]})}
+function pad(n){return n<10?"0"+n:""+n}
+function iso(d){return d.getFullYear()+"-"+pad(d.getMonth()+1)+"-"+pad(d.getDate())}
+function parse(s){var p=String(s).split("-");return new Date(+p[0],+p[1]-1,+p[2])}
+function addDays(s,n){var d=parse(s);d.setDate(d.getDate()+n);return iso(d)}
+function diffDays(a,b){return Math.round((parse(a)-parse(b))/864e5)}
+function md(s){var d=parse(s);return (d.getMonth()+1)+"/"+d.getDate()}
+function monday(s){var d=parse(s);var w=(d.getDay()+6)%7;d.setDate(d.getDate()-w);return iso(d)}
+function uid(){return Math.random().toString(36).slice(2,10)}
+function mins(m){if(!m)return "0 分";if(m<60)return m+" 分";var h=Math.round(m/6)/10;return h+" 小時"}
+function clone(o){return JSON.parse(JSON.stringify(o))}
+
+var TODAY=iso(new Date());
+var weekOffset=0;
+var state={subjects:[],tasks:[],rev:0};
+var isExample=false;
+var lastDeleted=null,toastTimer=null,confirmDel=null,confirmTimer=null;
+
+var SEED={"rev":1794557300000,"subjects":[{"id":"ielts","name":"IELTS（目標 6.5–7）","color":1,"exam":"2026-11-20"},{"id":"gre","name":"GRE Verbal（目標 145）","color":4,"exam":"2026-11-29"}],"tasks":[{"id":"a01","title":"診斷：模擬考題做一回聽力＋閱讀，對答案並記下最常錯的題型","subjectId":"ielts","date":"2026-11-13","minutes":100,"done":false},{"id":"a02","title":"GRE 高頻單字 20 個","subjectId":"gre","date":"2026-11-13","minutes":20,"done":false},{"id":"a03","title":"聽力 Section 3–4 精聽：錯的地方對照逐字稿再聽一次","subjectId":"ielts","date":"2026-11-14","minutes":60,"done":false},{"id":"a04","title":"閱讀限時 3 篇 60 分鐘＋訂正（注意 T/F/NG 與段落標題配對）","subjectId":"ielts","date":"2026-11-14","minutes":90,"done":false},{"id":"a05","title":"寫作 Task 2：背熟四段架構，計時 40 分鐘寫一篇","subjectId":"ielts","date":"2026-11-14","minutes":60,"done":false},{"id":"a06","title":"口說 Part 1：常見題目錄音練習，回聽修正","subjectId":"ielts","date":"2026-11-14","minutes":30,"done":false},{"id":"a07","title":"GRE 高頻單字 20 個＋複習昨天","subjectId":"gre","date":"2026-11-14","minutes":20,"done":false},{"id":"a08","title":"完整模擬考第 1 回：聽力＋閱讀＋寫作，全程計時不中斷","subjectId":"ielts","date":"2026-11-15","minutes":165,"done":false},{"id":"a09","title":"模擬考訂正：整理錯題與寫作要改的句子","subjectId":"ielts","date":"2026-11-15","minutes":60,"done":false},{"id":"a10","title":"口說 Part 2：準備 5 個萬用故事，每個錄 2 分鐘","subjectId":"ielts","date":"2026-11-15","minutes":45,"done":false},{"id":"a11","title":"GRE 高頻單字 20 個＋複習","subjectId":"gre","date":"2026-11-15","minutes":20,"done":false},{"id":"a12","title":"寫作 Task 1：圖表描述句型，計時 20 分鐘寫一篇","subjectId":"ielts","date":"2026-11-16","minutes":45,"done":false},{"id":"a13","title":"聽力模擬一回＋訂正","subjectId":"ielts","date":"2026-11-16","minutes":50,"done":false},{"id":"a14","title":"口說 Part 3：練習「觀點＋原因＋例子」的回答方式","subjectId":"ielts","date":"2026-11-16","minutes":30,"done":false},{"id":"a15","title":"GRE 高頻單字 20 個＋複習","subjectId":"gre","date":"2026-11-16","minutes":20,"done":false},{"id":"a16","title":"閱讀限時 2 篇 40 分鐘＋訂正","subjectId":"ielts","date":"2026-11-17","minutes":60,"done":false},{"id":"a17","title":"寫作 Task 2 計時一篇，對照範文修改","subjectId":"ielts","date":"2026-11-17","minutes":60,"done":false},{"id":"a18","title":"口說 Part 2 錄音 3 題","subjectId":"ielts","date":"2026-11-17","minutes":20,"done":false},{"id":"a19","title":"GRE 高頻單字 20 個＋複習","subjectId":"gre","date":"2026-11-17","minutes":20,"done":false},{"id":"a20","title":"完整模擬考第 2 回：聽力＋閱讀，照正式時間","subjectId":"ielts","date":"2026-11-18","minutes":95,"done":false},{"id":"a21","title":"完整模擬考第 2 回：寫作 Task 1＋Task 2，計時 60 分鐘","subjectId":"ielts","date":"2026-11-18","minutes":60,"done":false},{"id":"a22","title":"GRE 高頻單字 20 個＋複習","subjectId":"gre","date":"2026-11-18","minutes":20,"done":false},{"id":"a23","title":"第 2 回模擬考訂正，重看這週所有錯題","subjectId":"ielts","date":"2026-11-19","minutes":60,"done":false},{"id":"a24","title":"寫作：複習架構、連接詞和自己常犯的文法錯","subjectId":"ielts","date":"2026-11-19","minutes":30,"done":false},{"id":"a25","title":"口說：Part 1–3 完整模擬一次","subjectId":"ielts","date":"2026-11-19","minutes":20,"done":false},{"id":"a26","title":"確認證件、考場路線和報到時間，早點睡","subjectId":"ielts","date":"2026-11-19","minutes":10,"done":false},{"id":"a27","title":"GRE 單字：只複習這週不熟的字","subjectId":"gre","date":"2026-11-19","minutes":15,"done":false},{"id":"a28","title":"Verbal 診斷：真題做一套（兩個 section，計時 41 分鐘）＋對答案","subjectId":"gre","date":"2026-11-21","minutes":75,"done":false},{"id":"a29","title":"整理填空（TC）、句子等價（SE）、閱讀（RC）各自的作答步驟","subjectId":"gre","date":"2026-11-21","minutes":45,"done":false},{"id":"a30","title":"高頻單字 40 個","subjectId":"gre","date":"2026-11-21","minutes":40,"done":false},{"id":"a31","title":"看一遍 Quant 和寫作的題型與考試流程","subjectId":"gre","date":"2026-11-21","minutes":30,"done":false},{"id":"a32","title":"填空 TC 單格題 20 題＋訂正","subjectId":"gre","date":"2026-11-22","minutes":60,"done":false},{"id":"a33","title":"句子等價 SE 20 題＋訂正","subjectId":"gre","date":"2026-11-22","minutes":50,"done":false},{"id":"a34","title":"閱讀 RC 短篇 4 篇＋訂正","subjectId":"gre","date":"2026-11-22","minutes":50,"done":false},{"id":"a35","title":"高頻單字 40 個＋複習昨天","subjectId":"gre","date":"2026-11-22","minutes":45,"done":false},{"id":"a36","title":"句子等價 SE 15 題＋訂正","subjectId":"gre","date":"2026-11-23","minutes":40,"done":false},{"id":"a37","title":"閱讀 RC 短篇 3 篇＋訂正","subjectId":"gre","date":"2026-11-23","minutes":40,"done":false},{"id":"a38","title":"高頻單字 30 個＋複習","subjectId":"gre","date":"2026-11-23","minutes":40,"done":false},{"id":"a39","title":"填空 TC 雙格、三格題 15 題＋訂正","subjectId":"gre","date":"2026-11-24","minutes":45,"done":false},{"id":"a40","title":"閱讀 RC 長篇 1 篇＋邏輯題 3 題","subjectId":"gre","date":"2026-11-24","minutes":40,"done":false},{"id":"a41","title":"高頻單字 30 個＋複習","subjectId":"gre","date":"2026-11-24","minutes":40,"done":false},{"id":"a42","title":"真題限時 Verbal 一套（41 分鐘）＋逐題訂正","subjectId":"gre","date":"2026-11-25","minutes":80,"done":false},{"id":"a43","title":"高頻單字 30 個＋複習","subjectId":"gre","date":"2026-11-25","minutes":40,"done":false},{"id":"a44","title":"錯題重做：填空與句子等價","subjectId":"gre","date":"2026-11-26","minutes":45,"done":false},{"id":"a45","title":"閱讀弱點題型加強（主旨題、推論題）","subjectId":"gre","date":"2026-11-26","minutes":40,"done":false},{"id":"a46","title":"單字複習：把不熟的字再過一輪","subjectId":"gre","date":"2026-11-26","minutes":40,"done":false},{"id":"a47","title":"真題完整模擬考一回（寫作＋Verbal＋Quant，約 2 小時）","subjectId":"gre","date":"2026-11-27","minutes":120,"done":false},{"id":"a48","title":"模擬考 Verbal 訂正","subjectId":"gre","date":"2026-11-27","minutes":45,"done":false},{"id":"a49","title":"單字總複習：只看還不熟的","subjectId":"gre","date":"2026-11-28","minutes":45,"done":false},{"id":"a50","title":"Verbal 錯題快速回顧","subjectId":"gre","date":"2026-11-28","minutes":40,"done":false},{"id":"a51","title":"寫作 Issue：看 2 篇範文，記住段落架構","subjectId":"gre","date":"2026-11-28","minutes":30,"done":false},{"id":"a52","title":"確認證件和考場，早點睡","subjectId":"gre","date":"2026-11-28","minutes":10,"done":false}]};
+function example(){
+  var m=monday(TODAY);
+  var s=[{id:"ex1",name:"英文",color:1,exam:addDays(TODAY,21)},
+         {id:"ex2",name:"數學",color:2,exam:addDays(TODAY,28)},
+         {id:"ex3",name:"自然",color:3,exam:addDays(TODAY,35)}];
+  var raw=[[0,"ex1","單字 Unit 1–2",30],[0,"ex2","第一章 習題 1–20",60],
+           [1,"ex3","物理：運動學筆記整理",45],[1,"ex1","閱讀測驗 2 篇",40],
+           [2,"ex2","第二章 觀念複習",50],[2,"ex1","單字 Unit 3–4",30],
+           [3,"ex3","化學：莫耳計算練習",45],[3,"ex2","第二章 習題 1–15",60],
+           [4,"ex1","聽力練習 20 分鐘 + 訂正",35],[4,"ex3","生物：細胞章節重點",40],
+           [5,"ex2","週末模擬卷一回",90],[5,"ex1","作文一篇",50],
+           [6,"ex3","本週錯題重做",60]];
+  var t=raw.map(function(r,i){var date=addDays(m,r[0]);
+    return {id:"et"+i,title:r[2],subjectId:r[1],date:date,minutes:r[3],done:date<TODAY&&i%4!==1}});
+  return {subjects:s,tasks:t,rev:0};
+}
+function normalize(d){
+  d=d&&typeof d==="object"?d:{};
+  return {subjects:Array.isArray(d.subjects)?d.subjects:[],tasks:Array.isArray(d.tasks)?d.tasks:[],rev:+d.rev||0};
+}
+
+/* ---------- 儲存 ---------- */
+var mode="loading"; // cloud | local | none
+var ref=null,dirty=false,saving=false,flushTimer=null,cloudAnswered=false,slow=false,retried=false,early=false;
+function readLocal(){try{var r=localStorage.getItem(LS);return r?normalize(JSON.parse(r)):null}catch(e){return null}}
+function writeLocal(){try{localStorage.setItem(LS,JSON.stringify(state));return true}catch(e){return false}}
+
+function commit(){
+  isExample=false;
+  state.rev=Date.now();
+  var okLocal=writeLocal();
+  if(mode==="cloud"){dirty=true;clearTimeout(flushTimer);flushTimer=setTimeout(flush,500)}
+  else if(mode==="loading"){early=true}
+  else{mode=okLocal?"local":"none"}
+  render();
+}
+function flush(){
+  if(saving||!dirty||!ref)return;
+  saving=true;dirty=false;renderStatus();
+  ref.set(clone(state)).then(function(){retried=false},function(e){
+    var code=e&&e.code;
+    if(code==="unavailable"&&!retried){retried=true;dirty=true;return}
+    mode=writeLocal()?"local":"none";ref=null;
+  }).then(function(){
+    saving=false;renderStatus();
+    if(dirty&&ref){clearTimeout(flushTimer);flushTimer=setTimeout(flush,retried?1500:300)}
+  });
+}
+function adopt(d){
+  var n=normalize(d);
+  if(!isExample&&n.rev===state.rev)return;
+  state=n;isExample=false;writeLocal();render();
+}
+function localOnly(){try{localStorage.setItem(LS+"-t","1");localStorage.removeItem(LS+"-t");mode="local"}catch(e){mode="none"}renderStatus()}
+
+function start(){
+  var cached=readLocal();
+  if(cached&&(cached.tasks.length||cached.subjects.length)){state=cached}else{state=normalize(clone(SEED));writeLocal()}
+  render();
+  if(!(window.claude&&typeof window.claude.use==="function")){localOnly();return}
+  var slowTimer=setTimeout(function(){if(!cloudAnswered){slow=true;renderStatus()}},10000);
+  Promise.all([window.claude.use("db"),window.claude.use("user")]).then(function(r){
+    var db=r[0],user=r[1];
+    if(!db||!user){clearTimeout(slowTimer);localOnly();return}
+    return user.id().then(function(id){
+      if(!id){clearTimeout(slowTimer);localOnly();return}
+      ref=db.doc("data/users/"+id+"/plan");
+      mode="cloud";renderStatus();
+      ref.onSnapshot(function(snap){
+        if(!snap.metadata||!snap.metadata.fromCache){cloudAnswered=true;slow=false;clearTimeout(slowTimer)}
+        if(dirty||saving||(snap.metadata&&snap.metadata.hasPendingWrites)){renderStatus();return}
+        if(snap.exists){adopt(clone(snap.data()))}
+        else if(early&&cloudAnswered){early=false;dirty=true;flush()}
+        renderStatus();
+      },function(){
+        clearTimeout(slowTimer);cloudAnswered=true;slow=false;ref=null;localOnly();
+      });
+    });
+  }).catch(function(){clearTimeout(slowTimer);localOnly()});
+}
+
+/* ---------- 畫面 ---------- */
+function subj(id){for(var i=0;i<state.subjects.length;i++)if(state.subjects[i].id===id)return state.subjects[i];return null}
+function cvar(s){return s?"--c:var(--s"+(((s.color||1)-1)%6+1)+")":""}
+
+function renderStatus(){
+  var el=$("status"),k="busy",t="讀取中";
+  if(isExample&&mode!=="loading"){k="";t="範例計畫，尚未儲存"}
+  else if(mode==="cloud"){
+    if(saving||dirty){k="busy";t="儲存中"}
+    else if(slow){k="warn";t="暫時連不上雲端，顯示的是這台裝置上的版本"}
+    else if(!cloudAnswered){k="busy";t="同步中"}
+    else{k="ok";t="已儲存到你的帳號"}
+  }
+  else if(mode==="local"){k="ok";t="已儲存在這台裝置"}
+  else if(mode==="none"){k="warn";t="這裡無法儲存，重新整理後變更會消失"}
+  el.dataset.kind=k;el.textContent=t;
+}
+
+function renderSummary(){
+  var t=state.tasks,wk=monday(TODAY),we=addDays(wk,6);
+  var td=t.filter(function(x){return x.date===TODAY});
+  var tdDone=td.filter(function(x){return x.done}).length;
+  var tdLeft=td.reduce(function(a,x){return a+(x.done?0:x.minutes||0)},0);
+  var w=t.filter(function(x){return x.date>=wk&&x.date<=we});
+  var wDone=w.filter(function(x){return x.done});
+  var pct=w.length?Math.round(wDone.length/w.length*100):0;
+  var wMin=wDone.reduce(function(a,x){return a+(x.minutes||0)},0),wAll=w.reduce(function(a,x){return a+(x.minutes||0)},0);
+  var od=t.filter(function(x){return !x.done&&x.date<TODAY}).length;
+  var next=state.subjects.filter(function(s){return s.exam&&s.exam>=TODAY}).sort(function(a,b){return a.exam<b.exam?-1:1})[0];
+  var h="";
+  h+='<div class="stat"><span class="k">今天</span><span class="v">'+tdDone+' / '+td.length+'<small>項完成</small></span><span class="n">'+
+     (td.length?(tdLeft?"還要讀 "+mins(tdLeft):"今天的進度都完成了"):"今天沒有排任務")+'</span></div>';
+  h+='<div class="stat"><span class="k">本週完成率</span><span class="v">'+pct+'<small>%</small></span><div class="bar"><i style="width:'+pct+'%"></i></div><span class="n">已讀 '+mins(wMin)+'，共排 '+mins(wAll)+'</span></div>';
+  h+='<div class="stat"><span class="k">最近的考試</span>'+(next?
+     '<span class="v">'+(diffDays(next.exam,TODAY)===0?"今天":diffDays(next.exam,TODAY)+'<small>天後</small>')+'</span><span class="n">'+esc(next.name)+"，"+md(next.exam)+"（"+WD[parse(next.exam).getDay()]+"）</span>":
+     '<span class="v">—</span><span class="n">在科目裡填上考試日期就會倒數</span>')+'</div>';
+  h+='<div class="stat'+(od?" alert":"")+'"><span class="k">過期未完成</span><span class="v">'+od+'<small>項</small></span><span class="n">'+(od?"可以移到今天重新安排":"沒有落後的進度")+'</span></div>';
+  $("summary").innerHTML=h;
+}
+
+function renderNotice(){
+  $("notice").innerHTML=isExample?
+    '<div class="notice"><p><span class="tag">範例</span>下面是示範用的計畫。直接修改它，或清空後排自己的進度。</p><button class="btn small" type="button" data-action="clear-example">清空，從頭開始</button></div>':"";
+}
+
+function taskHtml(t,prefix,extra){
+  var s=subj(t.subjectId);
+  return '<div class="task'+(t.done?" done":"")+'" style="'+cvar(s)+'">'+
+    '<label for="'+prefix+t.id+'"><input type="checkbox" id="'+prefix+t.id+'" data-action="toggle" data-id="'+t.id+'"'+(t.done?" checked":"")+'><span class="ttl">'+esc(t.title)+'</span></label>'+
+    '<span class="meta"><span class="chip" style="'+cvar(s)+'">'+esc(s?s.name:"未分類")+'</span><span>'+mins(t.minutes||0)+'</span>'+extra+
+    '<button class="link danger" type="button" data-action="del-task" data-id="'+t.id+'" aria-label="刪除「'+esc(t.title)+'」">刪除</button></span></div>';
+}
+
+function renderOverdue(){
+  var od=state.tasks.filter(function(x){return !x.done&&x.date<TODAY}).sort(function(a,b){return a.date<b.date?-1:1});
+  if(!od.length){$("overdue").innerHTML="";return}
+  var h='<section class="panel overdue" aria-labelledby="odH"><div class="panel-head"><h2 id="odH">過期未完成（'+od.length+' 項）</h2>'+
+    '<button class="btn ghost small" type="button" data-action="all-today">全部移到今天</button></div><div class="tasks">';
+  od.forEach(function(t){
+    h+=taskHtml(t,"o-",'<span>原訂 '+md(t.date)+'</span><button class="link" type="button" data-action="to-today" data-id="'+t.id+'">移到今天</button>');
+  });
+  $("overdue").innerHTML=h+"</div></section>";
+}
+
+function renderWeek(){
+  var start=addDays(monday(TODAY),weekOffset*7),end=addDays(start,6);
+  $("weekTitle").textContent=(weekOffset===0?"本週　":weekOffset===1?"下週　":weekOffset===-1?"上週　":"")+md(start)+" – "+md(end);
+  var h="";
+  for(var i=0;i<7;i++){
+    var d=addDays(start,i);
+    var list=state.tasks.filter(function(x){return x.date===d}).sort(function(a,b){return (a.done-b.done)});
+    var total=list.reduce(function(a,x){return a+(x.minutes||0)},0);
+    h+='<div class="day'+(d===TODAY?" is-today":d<TODAY?" is-past":"")+'"><div class="day-label">'+
+       '<span class="wd">星期'+WD[parse(d).getDay()]+'</span><span class="dt">'+md(d)+'</span>'+
+       (d===TODAY?'<span class="pill">今天</span>':"")+(total?'<span class="mins">'+mins(total)+'</span>':"")+'</div><div class="tasks">';
+    if(!list.length){h+='<div class="empty">沒有排任務</div>'}
+    list.forEach(function(t){
+      h+=taskHtml(t,"t-",t.done?"":'<button class="link" type="button" data-action="postpone" data-id="'+t.id+'" aria-label="把「'+esc(t.title)+'」延到隔天">延一天</button>');
+    });
+    h+='<div><button class="link" type="button" data-action="add-on" data-date="'+d+'">＋ 在這天新增</button></div></div></div>';
+  }
+  $("week").innerHTML=h;
+}
+
+function renderSubjects(){
+  var h="";
+  if(!state.subjects.length){h='<div class="empty">還沒有科目。先在下面新增一科。</div>'}
+  state.subjects.forEach(function(s){
+    var ts=state.tasks.filter(function(x){return x.subjectId===s.id});
+    var dn=ts.filter(function(x){return x.done});
+    var pct=ts.length?Math.round(dn.length/ts.length*100):0;
+    var m=dn.reduce(function(a,x){return a+(x.minutes||0)},0);
+    var exam="";
+    if(s.exam){var dd=diffDays(s.exam,TODAY);
+      exam='<span class="sub exam'+(dd>=0&&dd<=7?" soon":"")+'">'+md(s.exam)+" 考試，"+(dd>0?"還有 "+dd+" 天":dd===0?"就是今天":"已經考完")+'</span>'}
+    h+='<div class="subject" style="'+cvar(s)+'"><div class="row"><span class="name">'+esc(s.name)+'</span>'+
+       '<button class="link danger" type="button" data-action="del-subject" data-id="'+s.id+'">'+(confirmDel===s.id?"確定刪除？":"刪除")+'</button></div>'+
+       exam+'<div class="bar"><i style="width:'+pct+'%"></i></div>'+
+       '<span class="sub">完成 '+dn.length+' / '+ts.length+' 項，已讀 '+mins(m)+'</span></div>';
+  });
+  $("subjects").innerHTML=h;
+  var sel=$("fSubject"),cur=sel.value,o='';
+  state.subjects.forEach(function(s){o+='<option value="'+s.id+'">'+esc(s.name)+'</option>'});
+  o+='<option value="">未分類</option>';
+  sel.innerHTML=o;
+  if(cur&&subj(cur))sel.value=cur;
+}
+
+function render(){
+  var a=document.activeElement,fid=a&&a.id&&!/^(f|s)[A-Z]/.test(a.id)?a.id:null;
+  renderSummary();renderNotice();renderOverdue();renderWeek();renderSubjects();renderStatus();
+  if(fid){var el=$(fid);if(el)el.focus()}
+}
+
+/* ---------- 操作 ---------- */
+function find(id){for(var i=0;i<state.tasks.length;i++)if(state.tasks[i].id===id)return state.tasks[i];return null}
+function showErr(id,msg){var e=$(id);e.textContent=msg||"";e.hidden=!msg}
+function toast(msg){$("toastMsg").textContent=msg;$("toast").hidden=false;clearTimeout(toastTimer);
+  toastTimer=setTimeout(function(){$("toast").hidden=true;lastDeleted=null},6000)}
+
+document.addEventListener("click",function(e){
+  var b=e.target.closest("[data-action]");if(!b||b.type==="checkbox")return;
+  var a=b.dataset.action,id=b.dataset.id,t;
+  if(a==="week"){var d=+b.dataset.d;weekOffset=d===0?0:weekOffset+d;renderWeek()}
+  else if(a==="add-on"){$("fDate").value=b.dataset.date;$("fTitle").focus();$("fTitle").scrollIntoView({block:"center"})}
+  else if(a==="postpone"){t=find(id);if(t){t.date=addDays(t.date,1);commit()}}
+  else if(a==="to-today"){t=find(id);if(t){t.date=TODAY;commit()}}
+  else if(a==="all-today"){state.tasks.forEach(function(x){if(!x.done&&x.date<TODAY)x.date=TODAY});commit()}
+  else if(a==="del-task"){t=find(id);if(t){lastDeleted={task:t,index:state.tasks.indexOf(t)};
+    state.tasks.splice(lastDeleted.index,1);commit();toast("已刪除「"+t.title+"」")}}
+  else if(a==="undo"){if(lastDeleted){state.tasks.splice(lastDeleted.index,0,lastDeleted.task);lastDeleted=null;$("toast").hidden=true;commit()}}
+  else if(a==="del-subject"){
+    if(confirmDel!==id){confirmDel=id;clearTimeout(confirmTimer);confirmTimer=setTimeout(function(){confirmDel=null;renderSubjects()},4000);renderSubjects();return}
+    confirmDel=null;clearTimeout(confirmTimer);
+    state.subjects=state.subjects.filter(function(s){return s.id!==id});
+    state.tasks.forEach(function(x){if(x.subjectId===id)x.subjectId=""});commit()}
+  else if(a==="clear-example"){state={subjects:[],tasks:[],rev:0};commit()}
+});
+document.addEventListener("change",function(e){
+  var c=e.target;if(c.dataset&&c.dataset.action==="toggle"){var t=find(c.dataset.id);if(t){t.done=c.checked;commit()}}
+});
+$("taskForm").addEventListener("submit",function(e){
+  e.preventDefault();
+  var title=$("fTitle").value.trim(),date=$("fDate").value,m=parseInt($("fMin").value,10);
+  if(!title){showErr("taskErr","請先填寫要讀的內容。");$("fTitle").focus();return}
+  if(!date){showErr("taskErr","請選一個日期。");$("fDate").focus();return}
+  if(!(m>0))m=30;if(m>600)m=600;
+  showErr("taskErr","");
+  state.tasks.push({id:uid(),title:title,subjectId:$("fSubject").value,date:date,minutes:m,done:false});
+  $("fTitle").value="";
+  var wk=addDays(monday(TODAY),weekOffset*7);
+  if(date<wk||date>addDays(wk,6))weekOffset=Math.round(diffDays(monday(date),monday(TODAY))/7);
+  commit();$("fTitle").focus();
+});
+$("subjectForm").addEventListener("submit",function(e){
+  e.preventDefault();
+  var name=$("sName").value.trim();
+  if(!name){showErr("subErr","請填寫科目名稱。");$("sName").focus();return}
+  if(state.subjects.some(function(s){return s.name===name})){showErr("subErr","已經有「"+name+"」這一科了。");return}
+  showErr("subErr","");
+  var used=state.subjects.map(function(s){return s.color}),c=1;
+  for(var i=1;i<=6;i++){if(used.indexOf(i)<0){c=i;break}c=state.subjects.length%6+1}
+  var s={id:uid(),name:name,color:c,exam:$("sExam").value||""};
+  state.subjects.push(s);$("sName").value="";$("sExam").value="";
+  commit();$("fSubject").value=s.id;
+});
+
+$("bkExport").addEventListener("click",function(){
+  try{
+    var url=URL.createObjectURL(new Blob([JSON.stringify(state,null,1)],{type:"application/json"}));
+    var a=document.createElement("a");a.href=url;a.download="讀書計畫備份-"+TODAY+".json";
+    document.body.appendChild(a);a.click();a.remove();setTimeout(function(){URL.revokeObjectURL(url)},2000);
+    showErr("bkMsg","");
+  }catch(e){showErr("bkMsg","匯出失敗，請再試一次。")}
+});
+$("bkFile").addEventListener("change",function(){
+  var f=this.files&&this.files[0];this.value="";if(!f)return;
+  var r=new FileReader();
+  r.onload=function(){
+    try{var d=JSON.parse(r.result);
+      if(!d||!Array.isArray(d.tasks)||!Array.isArray(d.subjects))throw 0;
+      state=normalize(d);showErr("bkMsg","");commit();
+    }catch(e){showErr("bkMsg","這個檔案不是讀書計畫的備份，請選擇之前匯出的 .json 檔。")}
+  };
+  r.onerror=function(){showErr("bkMsg","讀不到這個檔案，請再試一次。")};
+  r.readAsText(f);
+});
+document.addEventListener("visibilitychange",function(){
+  if(document.hidden)return;var t=iso(new Date());
+  if(t!==TODAY){TODAY=t;var n=new Date();
+    $("todayLine").textContent=n.getFullYear()+" 年 "+(n.getMonth()+1)+" 月 "+n.getDate()+" 日　星期"+WD[n.getDay()];
+    render()}
+});
+if("serviceWorker" in navigator){window.addEventListener("load",function(){navigator.serviceWorker.register("sw.js").catch(function(){})})}
+var now=new Date();
+$("todayLine").textContent=now.getFullYear()+" 年 "+(now.getMonth()+1)+" 月 "+now.getDate()+" 日　星期"+WD[now.getDay()];
+$("fDate").value=TODAY;
+start();
+})();
+</script>
+</body>
+</html>
