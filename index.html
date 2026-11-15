@@ -120,6 +120,23 @@ input::placeholder{color:var(--muted);opacity:.8}
 .day-label .wd{font-size:12.5px;color:var(--muted)}
 .day-label .dt{font-family:var(--font-display);font-size:20px;line-height:1.1}
 .day-label .mins{font-size:12px;color:var(--muted)}
+.daybtn{background:none;border:0;padding:4px 6px;margin:-4px -6px;border-radius:7px;text-align:left;cursor:pointer;display:flex;flex-direction:column;gap:2px;align-items:flex-start}
+.daybtn:hover{background:var(--accent-soft)}
+.daybtn .go{font-size:12px;color:var(--accent);white-space:nowrap}
+.time{font-weight:700;color:var(--ink)}
+.task.done .time{color:var(--muted);font-weight:400}
+.daysum{margin:0;font-size:13.5px;color:var(--muted)}
+.slot{border:1px solid var(--line);border-left:4px solid var(--c,var(--muted));border-radius:7px;background:var(--paper);padding:9px 10px;display:flex;flex-direction:column;gap:8px;min-width:0}
+.slot-top{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px}
+.slot-top label{display:flex;align-items:center;gap:10px;flex:1 1 200px;min-width:0;cursor:pointer}
+.slot-top input[type=checkbox]{width:18px;height:18px;flex:none;accent-color:var(--accent);margin:0}
+.slot .ttl{overflow-wrap:anywhere;min-width:0}
+.slot.done .ttl{text-decoration:line-through;color:var(--muted)}
+.slot .meta{display:flex;flex-wrap:wrap;align-items:center;gap:2px 8px;font-size:12.5px;color:var(--muted)}
+.slot-time{display:flex;flex-wrap:wrap;align-items:center;gap:6px 8px;font-size:13px;color:var(--muted);padding-left:28px}
+.slot-time input[type=time]{width:auto;min-width:104px;height:34px;padding:0 8px;border:1px solid var(--line);border-radius:7px;background:var(--surface)}
+.tf{display:inline-flex;align-items:center;gap:6px}
+.clash{color:var(--mark);font-weight:500}
 .day.is-today .dt{color:var(--accent)}
 .pill{font-size:11.5px;font-weight:700;background:var(--accent);color:var(--on-accent);border-radius:99px;padding:0 8px}
 .day.is-past .dt{color:var(--muted)}
@@ -163,7 +180,8 @@ input::placeholder{color:var(--muted);opacity:.8}
 @media (max-width:480px){
   .wrap{padding:20px 16px 56px}
   h1{font-size:26px}
-  .day{grid-template-columns:54px minmax(0,1fr);gap:8px}
+  .day{grid-template-columns:62px minmax(0,1fr);gap:8px}
+  .slot-time{padding-left:0}
   .task{flex-wrap:wrap}
   .task .meta{max-width:100%;justify-content:flex-start;padding-left:28px;flex:1 1 100%}
 }
@@ -214,11 +232,7 @@ input::placeholder{color:var(--muted);opacity:.8}
       <section class="panel" aria-labelledby="weekTitle">
         <div class="panel-head">
           <div class="week-title" id="weekTitle"></div>
-          <div class="weeknav">
-            <button class="btn ghost small" type="button" data-action="week" data-d="-1" aria-label="上一週">‹ 上一週</button>
-            <button class="btn ghost small" type="button" data-action="week" data-d="0">本週</button>
-            <button class="btn ghost small" type="button" data-action="week" data-d="1" aria-label="下一週">下一週 ›</button>
-          </div>
+          <div class="weeknav" id="weekNav"></div>
         </div>
         <div id="week"></div>
       </section>
@@ -279,7 +293,7 @@ function mins(m){if(!m)return "0 分";if(m<60)return m+" 分";var h=Math.round(m
 function clone(o){return JSON.parse(JSON.stringify(o))}
 
 var TODAY=iso(new Date());
-var weekOffset=0;
+var weekOffset=0,dayView=null;
 var state={subjects:[],tasks:[],rev:0};
 var isExample=false;
 var lastDeleted=null,toastTimer=null,confirmDel=null,confirmTimer=null;
@@ -427,7 +441,7 @@ function taskHtml(t,prefix,extra){
   var s=subj(t.subjectId);
   return '<div class="task'+(t.done?" done":"")+'" style="'+cvar(s)+'">'+
     '<label for="'+prefix+t.id+'"><input type="checkbox" id="'+prefix+t.id+'" data-action="toggle" data-id="'+t.id+'"'+(t.done?" checked":"")+'><span class="ttl">'+esc(t.title)+'</span></label>'+
-    '<span class="meta"><span class="chip" style="'+cvar(s)+'">'+esc(s?s.name:"未分類")+'</span><span>'+mins(t.minutes||0)+'</span>'+extra+
+    '<span class="meta">'+(t.start?'<span class="time">'+esc(t.start)+(t.end?"–"+esc(t.end):"")+'</span>':"")+'<span class="chip" style="'+cvar(s)+'">'+esc(s?s.name:"未分類")+'</span><span>'+mins(t.minutes||0)+'</span>'+extra+
     '<button class="link danger" type="button" data-action="del-task" data-id="'+t.id+'" aria-label="刪除「'+esc(t.title)+'」">刪除</button></span></div>';
 }
 
@@ -442,16 +456,45 @@ function renderOverdue(){
   $("overdue").innerHTML=h+"</div></section>";
 }
 
+function byTime(a,b){var x=a.start||"99",y=b.start||"99";return x<y?-1:x>y?1:(a.done-b.done)}
+function toMin(s){var p=String(s).split(":");return (+p[0])*60+(+p[1]||0)}
+function fromMin(m){m=Math.max(0,Math.min(m,23*60+59));return pad(Math.floor(m/60))+":"+pad(m%60)}
+function renderDay(){
+  var d=dayView,list=state.tasks.filter(function(x){return x.date===d}).sort(byTime);
+  var total=list.reduce(function(a,x){return a+(x.minutes||0)},0),timed=list.filter(function(x){return x.start&&x.end});
+  $("weekTitle").textContent=md(d)+"　星期"+WD[parse(d).getDay()]+(d===TODAY?"（今天）":"");
+  $("weekNav").innerHTML='<button class="btn ghost small" type="button" data-action="day" data-d="-1">‹ 前一天</button>'+
+    '<button class="btn ghost small" type="button" data-action="close-day">回到週計畫</button>'+
+    '<button class="btn ghost small" type="button" data-action="day" data-d="1">後一天 ›</button>';
+  var h='<p class="daysum">'+(list.length?'共 '+list.length+' 項，預估 '+mins(total)+'。已排時間 '+timed.length+' 項'+(timed.length<list.length?'，還有 '+(list.length-timed.length)+' 項沒排。':'。'):'這天還沒有任務。')+'</p><div class="tasks">';
+  list.forEach(function(t){
+    var s=subj(t.subjectId),clash=t.start&&t.end&&timed.some(function(o){return o!==t&&o.start<t.end&&t.start<o.end});
+    h+='<div class="slot'+(t.done?" done":"")+'" style="'+cvar(s)+'"><div class="slot-top">'+
+       '<label for="d-'+t.id+'"><input type="checkbox" id="d-'+t.id+'" data-action="toggle" data-id="'+t.id+'"'+(t.done?" checked":"")+'><span class="ttl">'+esc(t.title)+'</span></label>'+
+       '<span class="meta"><span class="chip" style="'+cvar(s)+'">'+esc(s?s.name:"未分類")+'</span><span>'+mins(t.minutes||0)+'</span>'+
+       '<button class="link danger" type="button" data-action="del-task" data-id="'+t.id+'" aria-label="刪除「'+esc(t.title)+'」">刪除</button></span></div>'+
+       '<div class="slot-time"><span class="tf"><label for="ts-'+t.id+'">開始</label><input type="time" id="ts-'+t.id+'" data-time="start" data-id="'+t.id+'" value="'+esc(t.start||"")+'"></span>'+
+       '<span class="tf"><label for="te-'+t.id+'">結束</label><input type="time" id="te-'+t.id+'" data-time="end" data-id="'+t.id+'" value="'+esc(t.end||"")+'"></span>'+
+       (t.start?'<button class="link" type="button" data-action="clear-time" data-id="'+t.id+'">清除時間</button>':"")+
+       (clash?'<span class="clash">和其他任務時間重疊</span>':"")+'</div></div>';
+  });
+  h+='</div><div><button class="link" type="button" data-action="add-on" data-date="'+d+'">＋ 在這天新增任務</button></div>';
+  $("week").innerHTML=h;
+}
 function renderWeek(){
+  if(dayView){renderDay();return}
+  $("weekNav").innerHTML='<button class="btn ghost small" type="button" data-action="week" data-d="-1" aria-label="上一週">‹ 上一週</button>'+
+    '<button class="btn ghost small" type="button" data-action="week" data-d="0">本週</button>'+
+    '<button class="btn ghost small" type="button" data-action="week" data-d="1" aria-label="下一週">下一週 ›</button>';
   var start=addDays(monday(TODAY),weekOffset*7),end=addDays(start,6);
   $("weekTitle").textContent=(weekOffset===0?"本週　":weekOffset===1?"下週　":weekOffset===-1?"上週　":"")+md(start)+" – "+md(end);
   var h="";
   for(var i=0;i<7;i++){
     var d=addDays(start,i);
-    var list=state.tasks.filter(function(x){return x.date===d}).sort(function(a,b){return (a.done-b.done)});
+    var list=state.tasks.filter(function(x){return x.date===d}).sort(function(a,b){return (a.done-b.done)||byTime(a,b)});
     var total=list.reduce(function(a,x){return a+(x.minutes||0)},0);
     h+='<div class="day'+(d===TODAY?" is-today":d<TODAY?" is-past":"")+'"><div class="day-label">'+
-       '<span class="wd">星期'+WD[parse(d).getDay()]+'</span><span class="dt">'+md(d)+'</span>'+
+       '<button class="daybtn" type="button" data-action="open-day" data-date="'+d+'" aria-label="打開 '+md(d)+' 排時間"><span class="wd">星期'+WD[parse(d).getDay()]+'</span><span class="dt">'+md(d)+'</span><span class="go">排時間 ›</span></button>'+
        (d===TODAY?'<span class="pill">今天</span>':"")+(total?'<span class="mins">'+mins(total)+'</span>':"")+'</div><div class="tasks">';
     if(!list.length){h+='<div class="empty">沒有排任務</div>'}
     list.forEach(function(t){
@@ -501,7 +544,11 @@ function toast(msg){$("toastMsg").textContent=msg;$("toast").hidden=false;clearT
 document.addEventListener("click",function(e){
   var b=e.target.closest("[data-action]");if(!b||b.type==="checkbox")return;
   var a=b.dataset.action,id=b.dataset.id,t;
-  if(a==="week"){var d=+b.dataset.d;weekOffset=d===0?0:weekOffset+d;renderWeek()}
+  if(a==="open-day"){dayView=b.dataset.date;renderWeek();$("weekTitle").scrollIntoView({block:"start"})}
+  else if(a==="close-day"){weekOffset=Math.round(diffDays(monday(dayView),monday(TODAY))/7);dayView=null;renderWeek()}
+  else if(a==="day"){dayView=addDays(dayView,+b.dataset.d);renderWeek()}
+  else if(a==="clear-time"){t=find(id);if(t){delete t.start;delete t.end;commit()}}
+  else if(a==="week"){var d=+b.dataset.d;weekOffset=d===0?0:weekOffset+d;renderWeek()}
   else if(a==="add-on"){$("fDate").value=b.dataset.date;$("fTitle").focus();$("fTitle").scrollIntoView({block:"center"})}
   else if(a==="postpone"){t=find(id);if(t){t.date=addDays(t.date,1);commit()}}
   else if(a==="to-today"){t=find(id);if(t){t.date=TODAY;commit()}}
@@ -517,7 +564,19 @@ document.addEventListener("click",function(e){
   else if(a==="clear-example"){state={subjects:[],tasks:[],rev:0};commit()}
 });
 document.addEventListener("change",function(e){
-  var c=e.target;if(c.dataset&&c.dataset.action==="toggle"){var t=find(c.dataset.id);if(t){t.done=c.checked;commit()}}
+  var c=e.target;
+  if(c.dataset&&c.dataset.time){
+    var k=find(c.dataset.id),v=c.value;if(!k)return;
+    if(c.dataset.time==="start"){
+      if(!v){delete k.start;delete k.end}
+      else{k.start=v;if(!k.end||k.end<=v)k.end=fromMin(toMin(v)+(k.minutes||30));else k.minutes=toMin(k.end)-toMin(v)}
+    }else if(k.start){
+      if(v&&v>k.start){k.end=v;k.minutes=toMin(v)-toMin(k.start)}
+      else k.end=fromMin(toMin(k.start)+(k.minutes||30));
+    }else if(v){k.end=v;k.start=fromMin(toMin(v)-(k.minutes||30))}
+    commit();return;
+  }
+  if(c.dataset&&c.dataset.action==="toggle"){var t=find(c.dataset.id);if(t){t.done=c.checked;commit()}}
 });
 $("taskForm").addEventListener("submit",function(e){
   e.preventDefault();
@@ -530,6 +589,7 @@ $("taskForm").addEventListener("submit",function(e){
   $("fTitle").value="";
   var wk=addDays(monday(TODAY),weekOffset*7);
   if(date<wk||date>addDays(wk,6))weekOffset=Math.round(diffDays(monday(date),monday(TODAY))/7);
+  if(dayView)dayView=date;
   commit();$("fTitle").focus();
 });
 $("subjectForm").addEventListener("submit",function(e){
