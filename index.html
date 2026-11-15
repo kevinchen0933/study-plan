@@ -301,9 +301,20 @@ function example(){
     return {id:"et"+i,title:r[2],subjectId:r[1],date:date,minutes:r[3],done:date<TODAY&&i%4!==1}});
   return {subjects:s,tasks:t,rev:0};
 }
+var EXTRA=[{"id":"b01","title":"寫作 Task 2：同意與否、利弊、問題解決三種題型各列一份大綱","subjectId":"ielts","date":"2026-11-15","minutes":40,"done":false},{"id":"b02","title":"聽寫練習：Section 1–2 常錯的拼字、數字、日期","subjectId":"ielts","date":"2026-11-15","minutes":20,"done":false},{"id":"b03","title":"閱讀限時 3 篇 60 分鐘＋訂正","subjectId":"ielts","date":"2026-11-16","minutes":90,"done":false},{"id":"b04","title":"寫作 Task 2 計時 40 分鐘再寫一篇，對照範文修改","subjectId":"ielts","date":"2026-11-16","minutes":50,"done":false},{"id":"b05","title":"聽寫練習：把今天聽力錯的句子逐句聽寫","subjectId":"ielts","date":"2026-11-16","minutes":20,"done":false},{"id":"b06","title":"聽力模擬一回＋訂正","subjectId":"ielts","date":"2026-11-17","minutes":50,"done":false},{"id":"b07","title":"寫作 Task 1 計時 20 分鐘寫一篇（換一種圖表類型）","subjectId":"ielts","date":"2026-11-17","minutes":30,"done":false},{"id":"b08","title":"口說 Part 1 和 Part 3 各練 5 題並錄音","subjectId":"ielts","date":"2026-11-17","minutes":30,"done":false},{"id":"b09","title":"第 2 回模擬考：當天先訂正聽力與閱讀的錯題","subjectId":"ielts","date":"2026-11-18","minutes":45,"done":false},{"id":"b10","title":"口說 Part 1–3 完整模擬一次並錄音","subjectId":"ielts","date":"2026-11-18","minutes":20,"done":false},{"id":"b11","title":"聽力一回，維持手感","subjectId":"ielts","date":"2026-11-19","minutes":40,"done":false},{"id":"b12","title":"閱讀 1 篇，限時 20 分鐘","subjectId":"ielts","date":"2026-11-19","minutes":25,"done":false}];
+function migrate(){
+  if(state.planV>=2)return;
+  state.subjects=state.subjects.filter(function(s){return s.id!=="gre"});
+  state.tasks=state.tasks.filter(function(t){return t.subjectId!=="gre"});
+  if(state.subjects.some(function(s){return s.id==="ielts"})){
+    var have={};state.tasks.forEach(function(t){have[t.id]=1});
+    EXTRA.forEach(function(t){if(!have[t.id])state.tasks.push(clone(t))});
+  }
+  state.planV=2;state.rev=Date.now();writeLocal();
+}
 function normalize(d){
   d=d&&typeof d==="object"?d:{};
-  return {subjects:Array.isArray(d.subjects)?d.subjects:[],tasks:Array.isArray(d.tasks)?d.tasks:[],rev:+d.rev||0};
+  return {subjects:Array.isArray(d.subjects)?d.subjects:[],tasks:Array.isArray(d.tasks)?d.tasks:[],rev:+d.rev||0,planV:+d.planV||0};
 }
 
 /* ---------- 儲存 ---------- */
@@ -342,7 +353,8 @@ function localOnly(){try{localStorage.setItem(LS+"-t","1");localStorage.removeIt
 
 function start(){
   var cached=readLocal();
-  if(cached&&(cached.tasks.length||cached.subjects.length)){state=cached}else{state=normalize(clone(SEED));writeLocal()}
+  if(cached){state=cached}else{state=normalize(clone(SEED));writeLocal()}
+  migrate();
   render();
   if(!(window.claude&&typeof window.claude.use==="function")){localOnly();return}
   var slowTimer=setTimeout(function(){if(!cloudAnswered){slow=true;renderStatus()}},10000);
